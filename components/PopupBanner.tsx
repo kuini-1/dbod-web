@@ -1,0 +1,480 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { API } from '../lib/api/client';
+import Image from 'next/image';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGem, faTimes, faGift, faClock, faBox, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'next/navigation';
+import CharacterSelect from './CharacterSelect';
+
+interface PopupBanner {
+    id: number;
+    title: string;
+    active: boolean;
+    price?: number; // Price in USD
+    packageId?: number; // Package ID for Stripe checkout
+    cashPoints?: number; // Cash points included in this banner
+    items?: BannerItem[];
+}
+
+type CharacterRace = 'human' | 'majin' | 'namekian';
+type CharacterGender = 'male' | 'female';
+
+interface CharacterModel {
+    race: CharacterRace;
+    gender: CharacterGender;
+    label: string;
+    shortLabel: string;
+}
+
+interface Character {
+    CharID: number;
+    CharName: string;
+    Level: number;
+    Class: number;
+}
+
+interface BannerItem {
+    tblidx: number;
+    amount: number;
+    sortOrder?: number | null;
+    item: {
+        tblidx: number;
+        name: string;
+        iconUrl: string | null;
+    };
+}
+
+export default function PopupBanner() {
+    const [popups, setPopups] = useState<PopupBanner[]>([]);
+    const [currentPopupIndex, setCurrentPopupIndex] = useState(0);
+    const [dontShowAgain, setDontShowAgain] = useState(false);
+    const [isVisible, setIsVisible] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
+    const [selectedCharacter, setSelectedCharacter] = useState<{race: CharacterRace; gender: CharacterGender}>({ race: 'human', gender: 'male' });
+    const [selectedGameCharacter, setSelectedGameCharacter] = useState<Character | null>(null);
+    const [isPurchasing, setIsPurchasing] = useState(false);
+    const router = useRouter();
+
+    // Character model options
+    const characterModels: CharacterModel[] = [
+        { race: 'human', gender: 'male', label: 'Human Male', shortLabel: 'Human M' },
+        { race: 'human', gender: 'female', label: 'Human Female', shortLabel: 'Human F' },
+        { race: 'majin', gender: 'male', label: 'Majin Male', shortLabel: 'Majin M' },
+        { race: 'majin', gender: 'female', label: 'Majin Female', shortLabel: 'Majin F' },
+        { race: 'namekian', gender: 'male', label: 'Namekian', shortLabel: 'Namekian' },
+    ];
+
+    useEffect(() => {
+        const fetchPopups = async () => {
+            try {
+                const gqlRes = await fetch('/api/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: `
+                          query PopupBanners($lang: String) {
+                            popupBanners(lang: $lang) {
+                              id
+                              title
+                              active
+                              price
+                              packageId
+                              cashPoints
+                              items {
+                                tblidx
+                                amount
+                                sortOrder
+                                item { tblidx name iconUrl }
+                              }
+                            }
+                          }
+                        `,
+                        variables: { lang: 'en' },
+                    }),
+                });
+
+                const gqlJson = await gqlRes.json();
+                const data: PopupBanner[] = gqlJson?.data?.popupBanners || [];
+
+                if (Array.isArray(data) && data.length > 0) {
+                    const filteredPopups = data.filter((popup: PopupBanner) => {
+                        if (popup.active === false) return false;
+                        const dismissedPopups = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('dismissedPopups') || '{}' : '{}');
+                        const lastDismissed = dismissedPopups[popup.id];
+
+                        if (lastDismissed) {
+                            const dismissedTime = new Date(lastDismissed).getTime();
+                            const currentTime = new Date().getTime();
+                            const hoursSinceDismissed = (currentTime - dismissedTime) / (1000 * 60 * 60);
+                            return hoursSinceDismissed >= 24;
+                        }
+
+                        return true;
+                    });
+                    setPopups(filteredPopups);
+                    if (filteredPopups.length > 0) {
+                        setTimeout(() => setIsVisible(true), 100);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch popup banners:', error);
+            }
+        };
+
+        fetchPopups();
+    }, []);
+
+    const handleClose = () => {
+        setIsClosing(true);
+        setTimeout(() => {
+            if (dontShowAgain && typeof window !== 'undefined') {
+                const dismissedPopups = JSON.parse(localStorage.getItem('dismissedPopups') || '{}');
+                dismissedPopups[popups[currentPopupIndex].id] = new Date().toISOString();
+                localStorage.setItem('dismissedPopups', JSON.stringify(dismissedPopups));
+            }
+
+            if (currentPopupIndex < popups.length - 1) {
+                setCurrentPopupIndex(currentPopupIndex + 1);
+                setIsClosing(false);
+                setTimeout(() => setIsVisible(true), 50);
+            } else {
+                setPopups([]);
+            }
+            setDontShowAgain(false);
+        }, 300);
+    };
+
+    const handlePurchase = async () => {
+        if (!selectedGameCharacter) {
+            alert('Please select a character to receive the items.');
+            return;
+        }
+
+        const currentPopup = popups[currentPopupIndex];
+        const price = currentPopup.price; // Price in USD
+
+        if (!price || price <= 0) {
+            alert('Price not specified for this package. Please contact support or set a price in the banner settings.');
+            setIsPurchasing(false);
+            return;
+        }
+
+        setIsPurchasing(true);
+
+        try {
+            // Ensure token cookie is set
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                const isSecure = window.location.protocol === 'https:';
+                const secureFlag = isSecure ? '; Secure' : '';
+                document.cookie = `token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Lax${secureFlag}`;
+            }
+
+            // Create Stripe Checkout Session
+            const response = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ 
+                    amount: price, // Send price in USD
+                    packageId: currentPopup.packageId, // Optional, for backward compatibility
+                    characterId: selectedGameCharacter.CharID,
+                    characterName: selectedGameCharacter.CharName,
+                }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    router.push(`/login?redirect=/donate`);
+                    return;
+                }
+                throw new Error('Failed to create checkout session');
+            }
+
+            const data = await response.json();
+
+            if (data.url) {
+                // Redirect to Stripe Checkout
+                window.location.href = data.url;
+            } else {
+                throw new Error('No checkout URL received');
+            }
+        } catch (error) {
+            console.error('Error creating checkout session:', error);
+            alert('Failed to start checkout. Please try again.');
+            setIsPurchasing(false);
+        }
+    };
+
+    const handleCharacterChange = (direction: 'prev' | 'next') => {
+        const currentIndex = characterModels.findIndex(
+            m => m.race === selectedCharacter.race && m.gender === selectedCharacter.gender
+        );
+        let newIndex;
+        if (direction === 'next') {
+            newIndex = (currentIndex + 1) % characterModels.length;
+        } else {
+            newIndex = (currentIndex - 1 + characterModels.length) % characterModels.length;
+        }
+        const newModel = characterModels[newIndex];
+        setSelectedCharacter({ race: newModel.race, gender: newModel.gender });
+    };
+
+    // Get character image filename based on race and gender
+    const getCharacterImageFilename = (race: CharacterRace, gender: CharacterGender): string => {
+        const filenameMap: Record<string, string> = {
+            'human-male': 'hm.png',
+            'human-female': 'hf.png',
+            'majin-male': 'mm.png',
+            'majin-female': 'mf.png',
+            'namekian-male': 'no.png',
+        };
+        return filenameMap[`${race}-${gender}`] || 'hm.png';
+    };
+
+    if (popups.length === 0) return null;
+
+    const currentPopup = popups[currentPopupIndex];
+    const currentModel = characterModels.find(
+        m => m.race === selectedCharacter.race && m.gender === selectedCharacter.gender
+    ) || characterModels[0];
+    
+    // Get character preview image path - computed based on current selection
+    // Add cache-busting query parameter to prevent stale image caching
+    // Using popup ID and character selection ensures cache updates when needed
+    const characterImagePath = `/banner/${currentPopup.id}/${getCharacterImageFilename(selectedCharacter.race, selectedCharacter.gender)}?t=${currentPopup.id}-${selectedCharacter.race}-${selectedCharacter.gender}`;
+
+    return (
+        <div className={`fixed inset-0 z-[9999] ${isClosing ? 'pointer-events-none' : ''}`}>
+            {/* Backdrop */}
+            <div 
+                className={`absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+                    isVisible ? 'opacity-100' : 'opacity-0'
+                }`}
+                onClick={handleClose}
+            />
+
+            {/* Main Modal */}
+            <div 
+                className={`relative w-full h-full flex items-center justify-center p-4 md:p-8 ${
+                    isVisible && !isClosing ? 'animate-popup-enter' : isClosing ? 'animate-popup-exit' : 'opacity-0'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="relative w-full max-w-7xl h-full max-h-[90vh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-700/50">
+                    {/* Close button */}
+                    <button
+                        onClick={handleClose}
+                        className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 rounded-lg transition-all duration-200 hover:scale-110 border border-slate-600/50 cursor-pointer"
+                        aria-label="Close"
+                    >
+                        <FontAwesomeIcon icon={faTimes} className="text-slate-300 text-lg" />
+                    </button>
+
+                    <div className="h-full flex flex-col md:flex-row">
+                        {/* Left Side - Character Preview */}
+                        <div className="relative w-full md:w-2/3 bg-gradient-to-br from-slate-950 to-slate-900 flex flex-col">
+                            {/* Character Preview Area */}
+                            <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
+                                {/* Background Pattern */}
+                                <div className="absolute inset-0 opacity-10">
+                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
+                                </div>
+
+                                {/* Character Image */}
+                                <div className="relative z-10 w-full h-full flex items-center justify-center">
+                                    <div className="relative w-full max-w-2xl h-full max-h-[600px] flex items-center justify-center">
+                                        <Image
+                                            key={`${currentPopup.id}-${selectedCharacter.race}-${selectedCharacter.gender}`}
+                                            src={characterImagePath}
+                                            alt={currentModel.label}
+                                            width={800}
+                                            height={800}
+                                            className="w-full h-full object-contain"
+                                            priority
+                                            unoptimized
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Navigation Arrows */}
+                                <button
+                                    onClick={() => handleCharacterChange('prev')}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 rounded-full transition-all duration-200 hover:scale-110 border border-slate-600/50 cursor-pointer"
+                                    aria-label="Previous character"
+                                >
+                                    <FontAwesomeIcon icon={faChevronLeft} className="text-slate-300" />
+                                </button>
+                                <button
+                                    onClick={() => handleCharacterChange('next')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 rounded-full transition-all duration-200 hover:scale-110 border border-slate-600/50 cursor-pointer"
+                                    aria-label="Next character"
+                                >
+                                    <FontAwesomeIcon icon={faChevronRight} className="text-slate-300" />
+                                </button>
+                            </div>
+
+                            {/* Character Selector */}
+                            <div className="p-6 border-t border-slate-700/50 bg-slate-900/50">
+                                <div className="flex items-center justify-center gap-2">
+                                    {characterModels.map((model) => {
+                                        const isSelected = selectedCharacter.race === model.race && selectedCharacter.gender === model.gender;
+                                        return (
+                                            <button
+                                                key={`${model.race}-${model.gender}`}
+                                                onClick={() => setSelectedCharacter({ race: model.race, gender: model.gender })}
+                                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+                                                    isSelected
+                                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/50'
+                                                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
+                                                }`}
+                                            >
+                                                {model.shortLabel}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right Side - Package Info */}
+                        <div className="w-full md:w-1/3 bg-slate-800/50 flex flex-col border-t md:border-t-0 md:border-l border-slate-700/50">
+                            {/* Header */}
+                            <div className="p-6 border-b border-slate-700/50">
+                                <h2 className="text-3xl font-bold text-white">{currentPopup.title}</h2>
+                            </div>
+
+                            {/* Package Items */}
+                            <div className="flex-1 p-6 overflow-y-auto">
+                                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                                    <FontAwesomeIcon icon={faGift} className="text-indigo-400" />
+                                    Package Contents
+                                </h3>
+                                
+                                <div className="space-y-3">
+                                    {/* Cash Points (if available) */}
+                                    {currentPopup.cashPoints && currentPopup.cashPoints > 0 && (
+                                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-900/50 to-purple-900/50 rounded-lg border border-indigo-500/50 hover:border-indigo-400/50 transition-all duration-200">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-indigo-800/50 flex items-center justify-center border border-indigo-600/50">
+                                                    <FontAwesomeIcon icon={faGem} className="text-indigo-300 text-xl" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-white font-medium">Cash Points</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-indigo-300 font-semibold">
+                                                <span>
+                                                    <span className="align-sub inline-block leading-none">×</span>
+                                                    {currentPopup.cashPoints}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {(currentPopup.items || []).map((row, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-indigo-500/50 transition-all duration-200"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center border border-slate-700 overflow-hidden">
+                                                    {row.item?.iconUrl ? (
+                                                        <Image
+                                                            src={row.item.iconUrl}
+                                                            alt={row.item.name}
+                                                            width={40}
+                                                            height={40}
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-slate-700 flex items-center justify-center text-slate-500 text-xs">
+                                                            —
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <div className="text-white font-medium">{row.item?.name || `Item ${row.tblidx}`}</div>
+                                                </div>
+                                            </div>
+                                            <div className="text-indigo-400 font-semibold">
+                                                <span>
+                                                    <span className="align-sub inline-block leading-none">×</span>
+                                                    {row.amount}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Purchase Section */}
+                            <div className="p-6 border-t border-slate-700/50 bg-slate-900/30">
+                                <div className="space-y-4">
+                                    {/* Character Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-2">
+                                            Select Character
+                                        </label>
+                                        <CharacterSelect
+                                            onSelect={(char) => setSelectedGameCharacter(char)}
+                                            selectedCharacter={selectedGameCharacter || undefined}
+                                            title="Choose character"
+                                        />
+                                    </div>
+
+                                    {/* Price Display */}
+                                    <div className="text-center pt-2">
+                                        <div className="text-sm text-slate-400 mb-1">Special Offer</div>
+                                        <div className="text-3xl font-bold text-white">
+                                            ${currentPopup.price?.toFixed(2) || '9.99'} USD
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Purchase Button */}
+                                    <button
+                                        onClick={handlePurchase}
+                                        disabled={isPurchasing || !selectedGameCharacter}
+                                        className="w-full h-14 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-lg font-semibold text-lg text-white flex items-center justify-center gap-2 border-0 outline-none focus:outline-none leading-none hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-200 cursor-pointer"
+                                    >
+                                            {isPurchasing ? (
+                                                <>
+                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FontAwesomeIcon icon={faGift} />
+                                                Purchase Now
+                                            </>
+                                        )}
+                                    </button>
+
+                                    {/* Don't show again */}
+                                    <div className="flex items-center justify-center gap-2 pt-2">
+                                        <input
+                                            type="checkbox"
+                                            id="dontShowAgain"
+                                            checked={dontShowAgain}
+                                            onChange={(e) => setDontShowAgain(e.target.checked)}
+                                            className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 cursor-pointer"
+                                        />
+                                        <label htmlFor="dontShowAgain" className="text-slate-400 text-xs cursor-pointer hover:text-slate-300 transition-colors">
+                                            Don&apos;t show again for 24 hours
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
