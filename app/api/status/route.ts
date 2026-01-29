@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { server_status } from '../../../lib/models/server_status';
+import { ensureServerStatusTable, server_status } from '../../../lib/models/server_status';
 
 export async function GET(request: NextRequest) {
     try {
+        await ensureServerStatusTable();
         const status: any = await server_status.findOne({raw: true, where: {
             id: 1
         }});

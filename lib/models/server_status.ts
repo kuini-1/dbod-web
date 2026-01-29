@@ -93,11 +93,11 @@ server_status.init({
     sequelize: dbod_acc,
 })
 
-// Create table if it doesn't exist
-server_status.sync({ alter: true }).then(() => {
-    console.log('Server status table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating server status table:', error);
-});
+let serverStatusSynced = false;
+export async function ensureServerStatusTable() {
+    if (serverStatusSynced) return;
+    await server_status.sync({ alter: true });
+    serverStatusSynced = true;
+}
 
 export { server_status }

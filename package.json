@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -30,6 +30,7 @@
     "react-hook-form": "^7.34.0",
     "react-hot-toast": "^2.5.2",
     "react-switch": "^7.0.0",
+    "reactflow": "^11.11.4",
     "sequelize": "^6.21.3",
     "stripe": "^10.2.0",
     "sweetalert2": "^11.22.0",
