@@ -59,7 +59,6 @@ interface CharactersAttributes {
     PlayTime?: number;
     SuperiorEffectType?: number;
     CreateTime?: number;
-    is_online?: number;
 }
 export interface CharactersInput extends Optional<CharactersAttributes, 'CharID'> {}
 export interface CharactersOuput extends Required<CharactersAttributes> {}
@@ -122,7 +121,6 @@ class characters extends Model<CharactersAttributes, CharactersInput> implements
     public PlayTime!: number
     public SuperiorEffectType!: number
     public CreateTime!: number
-    public is_online!: number
 }
   
 characters.init({
@@ -186,8 +184,7 @@ characters.init({
     InvisibleCostume: { type: DataTypes.TINYINT },
     PlayTime: { type: DataTypes.BIGINT },
     SuperiorEffectType: { type: DataTypes.TINYINT },
-    CreateTime: { type: DataTypes.BIGINT },
-    is_online: { type: DataTypes.INTEGER }
+    CreateTime: { type: DataTypes.BIGINT }
   }, {
     freezeTableName: true,
     timestamps: false,

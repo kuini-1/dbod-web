@@ -25,7 +25,6 @@ export default function HomePage() {
     useEffect(() => {
         (async () => {
             try {
-                const res = await API.get("/private");
                 const server_status = await API.get("/status");
                 if (server_status.status === 200) {
                     const data = server_status.data;
@@ -81,6 +80,7 @@ export default function HomePage() {
                             <div key={i} className="w-screen h-full bg-black/40 flex justify-center items-center relative">
                                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-stone-900/80 z-10" />
                                 <Image 
+                                    priority={i === 0}
                                     className="w-auto max-h-[60vh] object-contain z-20 transform hover:scale-105 transition-transform duration-500" 
                                     src={`/${image}`} 
                                     alt="" 
