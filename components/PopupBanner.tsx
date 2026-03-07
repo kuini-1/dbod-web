@@ -184,6 +184,7 @@ export default function PopupBanner() {
                 body: JSON.stringify({ 
                     amount: price, // Send price in USD
                     packageId: currentPopup.packageId, // Optional, for backward compatibility
+                    bannerId: currentPopup.id, // Banner ID for item delivery
                     characterId: selectedGameCharacter.CharID,
                     characterName: selectedGameCharacter.CharName,
                 }),

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { packageId, amount: amountUSD, characterId, characterName } = body;
+        const { packageId, amount: amountUSD, characterId, characterName, bannerId } = body;
 
         // If amountUSD is provided, use it directly; otherwise fall back to packageId
         let amount: number;
@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
                 amount: amountUSD ? amountUSD.toString() : (amount / 100).toString(),
                 characterId: characterId?.toString() || '',
                 characterName: characterName || '',
+                bannerId: bannerId ? bannerId.toString() : '',
             },
             customer_email: user.email || undefined,
         });
