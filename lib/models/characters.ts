@@ -59,6 +59,10 @@ interface CharactersAttributes {
     PlayTime?: number;
     SuperiorEffectType?: number;
     CreateTime?: number;
+    CCBD_Token?: number;
+    CCBD_Limit?: number;
+    CCBD_Entry?: number;
+    Item_Worth?: number;
 }
 export interface CharactersInput extends Optional<CharactersAttributes, 'CharID'> {}
 export interface CharactersOuput extends Required<CharactersAttributes> {}
@@ -121,6 +125,10 @@ class characters extends Model<CharactersAttributes, CharactersInput> implements
     public PlayTime!: number
     public SuperiorEffectType!: number
     public CreateTime!: number
+    public CCBD_Token!: number
+    public CCBD_Limit!: number
+    public CCBD_Entry!: number
+    public Item_Worth!: number
 }
   
 characters.init({
@@ -184,7 +192,11 @@ characters.init({
     InvisibleCostume: { type: DataTypes.TINYINT },
     PlayTime: { type: DataTypes.BIGINT },
     SuperiorEffectType: { type: DataTypes.TINYINT },
-    CreateTime: { type: DataTypes.BIGINT }
+    CreateTime: { type: DataTypes.BIGINT },
+    CCBD_Token: { type: DataTypes.TINYINT },
+    CCBD_Limit: { type: DataTypes.TINYINT },
+    CCBD_Entry: { type: DataTypes.TINYINT },
+    Item_Worth: { type: DataTypes.TINYINT }
   }, {
     freezeTableName: true,
     timestamps: false,

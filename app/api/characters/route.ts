@@ -29,7 +29,11 @@ export async function GET(request: NextRequest) {
                 'WaguPoint',
                 'Hoipoi_MixLevel',
                 'Money',
-                'MudosaPoint'
+                'MudosaPoint',
+                'CCBD_Token',
+                'CCBD_Limit',
+                'CCBD_Entry',
+                'Item_Worth'
             ],
             order: [
                 ['Level', 'DESC'],

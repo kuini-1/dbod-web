@@ -3,6 +3,7 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import PopupBanner from '@/components/PopupBanner';
 import NavbarClient from '@/components/NavbarClient';
+import ScrollToTop from '@/components/ScrollToTop';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
         <Toaster />
         <PopupBanner />
         <NavbarClient />
+        <ScrollToTop />
         {children}
       </body>
     </html>

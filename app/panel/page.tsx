@@ -12,15 +12,17 @@ import {
     faKey, 
     faLock, 
     faCoins, 
-    faHammer, 
-    faStar,
     faDollarSign,
     faEnvelope,
     faCheckCircle,
-    faClock
+    faClock,
+    faArrowUp,
+    faCircleInfo
 } from '@fortawesome/free-solid-svg-icons';
 import { API } from '@/lib/api/client';
 import { local } from '@/lib/utils/localize';
+import UpgradeEquipmentModal from '@/components/UpgradeEquipmentModal';
+import CharacterDetailsModal from '@/components/CharacterDetailsModal';
 import { SuccessToast, WarningToast, DangerToast } from '@/lib/utils/toasts';
 import { useForm } from 'react-hook-form';
 
@@ -31,6 +33,7 @@ interface AccountProps {
 }
 
 interface CharactersProps {
+    CharID?: number;
     CharName: string;
     Level: number;
     Class: number;
@@ -39,6 +42,10 @@ interface CharactersProps {
     Hoipoi_MixLevel: number;
     Money: number;
     MudosaPoint: number;
+    CCBD_Token?: number;
+    CCBD_Limit?: number;
+    CCBD_Entry?: number;
+    Item_Worth?: number;
 }
 
 interface DonationLogProps {
@@ -132,60 +139,62 @@ const UserInfo = ({ username, email, cp, onChangePassword }: { username: string;
     );
 };
 
-const Character = ({ char }: { char: CharactersProps }) => {
-    const [hover, setHover] = useState(false);
-
+const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersProps; onUpgradeClick: () => void; onDetailsClick: () => void }) => {
     return (
-        <div className="space-y-2">
-            <div 
-                onMouseEnter={() => setHover(true)} 
-                onMouseLeave={() => setHover(false)} 
-                className='p-4 bg-stone-800/50 rounded-xl border border-white/5 hover:border-red-500/50 transition-all duration-300'
-            >
-                <div className='flex items-center space-x-4'>
-                    <div className='relative'>
-                        <Image src={`/classes/${char.Class}.png`} alt="" width={48} height={48} />
-                        <div className='absolute -bottom-4 -right-4 bg-stone-900 px-2 py-1 rounded-full text-sm font-bold text-red-400'>
+        <div className='group relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-stone-800/80 to-stone-900/80 transition-all duration-300 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/5'>
+            <div className='p-6'>
+                <div className='flex items-start gap-4'>
+                    <div className='relative shrink-0'>
+                        <div className='overflow-hidden rounded-xl border border-white/10 bg-stone-900/50'>
+                            <Image src={`/classes/${char.Class}.png`} alt="" width={48} height={48} />
+                        </div>
+                        <div className='absolute -bottom-2 -right-2 rounded-lg bg-stone-900 px-2 py-0.5 text-xs font-bold text-red-400 ring-2 ring-stone-800'>
                             Lv.{char.Level}
                         </div>
                     </div>
-                    <div className='flex-1'>
-                        <h3 className='text-xl font-bold text-red-400'>{char.CharName}</h3>
-                        <div className='flex items-center space-x-2 text-sm text-white/60'>
-                            <span>{local.sp}: {char.SpPoint}</span>
-                            <span>•</span>
-                            <span>{local.wagu}: {char.WaguPoint}</span>
+                    <div className='min-w-0 flex-1'>
+                        <h3 className='text-lg font-bold text-red-400 truncate'>{char.CharName}</h3>
+                        <div className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60'>
+                            <span>{local.sp}: <span className='text-red-400/90'>{char.SpPoint}</span></span>
+                            <span>{local.wagu}: <span className='text-red-400/90'>{char.WaguPoint}</span></span>
                         </div>
                     </div>
                 </div>
-            </div>
-            {hover && (
-                <div className='p-4 bg-stone-800/50 rounded-xl border border-white/5 grid grid-cols-2 md:grid-cols-3 gap-4'>
-                    <div className='flex items-center space-x-2'>
-                        <FontAwesomeIcon icon={faHammer} className='text-red-400 text-sm' />
-                        <span className='text-white/60'>Craft Lv.: <span className='text-red-400'>{char.Hoipoi_MixLevel}</span></span>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                        <FontAwesomeIcon icon={faCoins} className='text-red-400 text-sm' />
-                        <span className='text-white/60'>Zenny: <span className='text-red-400'>{char.Money}</span></span>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                        <FontAwesomeIcon icon={faStar} className='text-red-400 text-sm' />
-                        <span className='text-white/60'>Mudosa: <span className='text-red-400'>{char.MudosaPoint}</span></span>
-                    </div>
+                <div className='mt-4 flex gap-2'>
+                    <button
+                        onClick={onDetailsClick}
+                        className='flex-1 flex items-center justify-center gap-2 rounded-lg border border-white/5 bg-stone-800/50 px-4 py-2.5 text-sm font-medium text-white/70 transition-all duration-300 hover:border-red-500/50 hover:text-red-400 cursor-pointer'
+                    >
+                        <FontAwesomeIcon icon={faCircleInfo} className='text-sm' />
+                        <span>Details</span>
+                    </button>
+                    <button
+                        onClick={onUpgradeClick}
+                        className='flex-1 flex items-center justify-center gap-2 rounded-lg border border-white/5 bg-stone-800/50 px-4 py-2.5 text-sm font-medium text-red-400/90 transition-all duration-300 hover:border-red-500/50 hover:text-red-400 cursor-pointer'
+                    >
+                        <FontAwesomeIcon icon={faArrowUp} className='text-sm' />
+                        <span>Upgrade</span>
+                    </button>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
 
-const Characters = ({ characters }: { characters: CharactersProps[] }) => {
+const Characters = ({ characters, onUpgradeClick, onDetailsClick }: { characters: CharactersProps[]; onUpgradeClick: (char: CharactersProps) => void; onDetailsClick: (char: CharactersProps) => void }) => {
     return (
-        <div className='space-y-4'>
-            <h2 className='text-2xl font-bold text-white/60 mb-6'>{local.characters}</h2>
-            {characters?.map((char, i) => (
-                <Character key={i} char={char} />
-            ))}
+        <div className='space-y-6'>
+            <h2 className='text-2xl font-bold text-white/60'>{local.characters}</h2>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+                {characters?.map((char, i) => (
+                    <Character
+                        key={char.CharID ?? i}
+                        char={char}
+                        onUpgradeClick={() => onUpgradeClick(char)}
+                        onDetailsClick={() => onDetailsClick(char)}
+                    />
+                ))}
+            </div>
         </div>
     );
 };
@@ -224,11 +233,14 @@ const Donations = ({ donations }: { donations: DonationLogProps[] }) => {
 export default function PanelPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<PanelTab>('userInfo');
-    const [account, setAccount] = useState<AccountProps>();
+    const [account, setAccount] = useState<AccountProps & { vip?: number }>();
     const [characters, setCharacters] = useState<CharactersProps[]>([]);
     const [donationLog, setDonationLog] = useState<DonationLogProps[]>([]);
     const [changePassword, setChangePassword] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+    const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [selectedChar, setSelectedChar] = useState<CharactersProps | null>(null);
     const { register, handleSubmit } = useForm();
 
     const fetchCharacters = async () => {
@@ -468,7 +480,17 @@ export default function PanelPage() {
                                         <p className="text-white/60 text-lg">No characters found</p>
                                     </div>
                                 ) : (
-                                    <Characters characters={characters} />
+                                    <Characters
+                                        characters={characters}
+                                        onUpgradeClick={(char) => {
+                                            setSelectedChar(char);
+                                            setUpgradeModalOpen(true);
+                                        }}
+                                        onDetailsClick={(char) => {
+                                            setSelectedChar(char);
+                                            setDetailsModalOpen(true);
+                                        }}
+                                    />
                                 )}
                             </>
                         )}
@@ -478,6 +500,31 @@ export default function PanelPage() {
                     </div>
                 </div>
             </div>
+
+            <UpgradeEquipmentModal
+                char={selectedChar}
+                accountVip={account?.vip ?? 0}
+                mallpoints={account?.mallpoints ?? 0}
+                isOpen={upgradeModalOpen}
+                onClose={() => {
+                    setUpgradeModalOpen(false);
+                    setSelectedChar(null);
+                }}
+                onRefillSuccess={(newCCBDEntry) => {
+                    fetchCharacters();
+                    if (selectedChar) {
+                        setSelectedChar({ ...selectedChar, CCBD_Entry: newCCBDEntry });
+                    }
+                }}
+            />
+            <CharacterDetailsModal
+                char={selectedChar}
+                isOpen={detailsModalOpen}
+                onClose={() => {
+                    setDetailsModalOpen(false);
+                    setSelectedChar(null);
+                }}
+            />
         </div>
     );
 }

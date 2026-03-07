@@ -130,6 +130,19 @@ export const local: Record<string, string> = {
     channelBuffsDesc: "Channel bonus stats and global buffs to enhance your gameplay.",
     craftedEquipment: "Crafted Equipment",
     craftedEquipmentDesc: "Bonus upgrade stats upgradable via website. Currency obtained from CCBD.",
+    upgradeEquipmentStats: "Upgrade Equipment Stats",
+    ccbdToken: "CCBD Token",
+    ccbdLimit: "CCBD Limit",
+    ccbdEntry: "CCBD Entry",
+    currentUpgradedStats: "Current upgraded equipment stats",
+    increaseStatsBy: "Add +{0}% (total: {1}%)",
+    craftedEquipmentOnly: "This upgrade applies only to crafted equipment.",
+    characterDetails: "Character Details",
+    refill: "Refill",
+    refillConfirmTitle: "Refill CCBD Entry",
+    refillConfirmMessage: "Refill CCBD Entry to max ({0}) for 25 Cash Points?",
+    refillSuccess: "CCBD Entry refilled successfully",
+    refillInsufficientCP: "Not enough Cash Points. Need 25 CP.",
 };
 
 // Helper function for string formatting
