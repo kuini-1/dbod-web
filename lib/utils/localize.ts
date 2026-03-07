@@ -119,6 +119,17 @@ export const local: Record<string, string> = {
     accessDiamondChat: "Access to Diamond-only chat channel",
     monthlyDiamondBox: "Monthly Diamond Box",
     customPet: "Custom Pet",
+    coreFeatures: "Core Features",
+    dualClass: "Dual Class",
+    dualClassDesc: "Choose 2 classes per character and switch freely between both via a special in-game item. Use both sub-class skills freely without having to switch classes after learning the skills.",
+    equipmentUpgrade: "Equipment Upgrade System",
+    equipmentUpgradeDesc: "Gear base stats are rarity-based. As you upgrade, your gear gains random base stats or upgrades existing base stats every 3 upgrades. Each base stat and upgrade stat has a min-max value which will add to the difficulty of obtaining endgame-worthy stats.",
+    fastGameplay: "Fast Gameplay",
+    fastGameplayDesc: "High EXP, move speed, fly speed, and stats for an accelerated experience.",
+    channelBuffs: "Channel & Global Buffs",
+    channelBuffsDesc: "Channel bonus stats and global buffs to enhance your gameplay.",
+    craftedEquipment: "Crafted Equipment",
+    craftedEquipmentDesc: "Bonus upgrade stats upgradable via website. Currency obtained from CCBD.",
 };
 
 // Helper function for string formatting

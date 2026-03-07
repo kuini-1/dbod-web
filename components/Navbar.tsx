@@ -64,7 +64,7 @@ export function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center space-x-8">
-                        <Link href="/" className="text-red-400 font-bold text-xl">
+                        <Link href="/" className="text-red-400 font-bold text-xl hover:text-red-300 transition-colors">
                             DBOD
                         </Link>
                         <div className="hidden md:flex space-x-6">
@@ -139,7 +139,7 @@ export function Navbar() {
                                 <Link href="/login" className="text-stone-300 hover:text-red-400 transition-colors">
                                     {local.navSubItemLogin}
                                 </Link>
-                                <Link href="/register" className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors">
+                                <Link href="/register" className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
                                     {local.navSubItemRegister}
                                 </Link>
                             </>
