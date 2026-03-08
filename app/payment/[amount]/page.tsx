@@ -142,8 +142,8 @@ export default function PaymentPage() {
     const firstTimeBonusCP = firstTime ? baseCP : 0;
     const totalCP = baseCP + eventBonusCP + firstTimeBonusCP;
     const hasBonuses = eventBonusCP > 0 || firstTimeBonusCP > 0;
-    const bonusPercentage = hasBonuses 
-      ? Math.round(((eventBonusCP + firstTimeBonusCP) / baseCP) * 100)
+    const bonusPercentage = hasBonuses
+      ? (firstTime ? 100 : 0) + (bonusCP > 0 ? Math.round(bonusCP * 100) : 0)
       : 0;
 
     return (

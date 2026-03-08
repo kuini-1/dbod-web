@@ -9,9 +9,10 @@ import { API } from '@/lib/api/client';
 interface QuickPurchaseProps {
     bonusCP?: number;
     firstTime?: boolean;
+    currency?: string;
 }
 
-export default function QuickPurchase({ bonusCP, firstTime }: QuickPurchaseProps) {
+export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: QuickPurchaseProps) {
     const router = useRouter();
     const [lastPurchase, setLastPurchase] = useState<{ price: number; cp: number } | null>(null);
     const [isReturningCustomer, setIsReturningCustomer] = useState(false);
@@ -35,13 +36,18 @@ export default function QuickPurchase({ bonusCP, firstTime }: QuickPurchaseProps
         setLoading(price);
         
         try {
+            const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
             const response = await fetch('/api/create-checkout-session', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 credentials: 'include',
-                body: JSON.stringify({ packageId }),
+                body: JSON.stringify({ packageId, amount: price, currency }),
             });
             
             if (!response.ok) {
@@ -49,7 +55,8 @@ export default function QuickPurchase({ bonusCP, firstTime }: QuickPurchaseProps
                     router.push(`/login?redirect=/donate`);
                     return;
                 }
-                throw new Error('Failed to create checkout session');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Failed to create checkout session');
             }
             
             const data = await response.json();
@@ -61,7 +68,7 @@ export default function QuickPurchase({ bonusCP, firstTime }: QuickPurchaseProps
             }
         } catch (error) {
             console.error('Error creating checkout session:', error);
-            alert('Failed to start checkout. Please try again.');
+            alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
             setLoading(null);
         }
     };

@@ -16,6 +16,7 @@ interface PackageCardProps {
     isBestValue?: boolean;
     isRecommended?: boolean;
     index: number;
+    currency?: string;
 }
 
 export default function PackageCard({
@@ -27,7 +28,8 @@ export default function PackageCard({
     cpPerDollar,
     isBestValue = false,
     isRecommended = false,
-    index
+    index,
+    currency = 'usd'
 }: PackageCardProps) {
     const [hover, setHover] = useState(false);
     const router = useRouter();
@@ -37,10 +39,10 @@ export default function PackageCard({
     const firstTimeBonusCP = firstTime ? baseCP : 0;
     const totalCP = baseCP + eventBonusCP + firstTimeBonusCP;
     
-    // Calculate savings percentage if applicable
+    // Calculate savings percentage if applicable (use bonusCP directly to avoid rounding showing 26% instead of 25%)
     const hasBonuses = eventBonusCP > 0 || firstTimeBonusCP > 0;
-    const bonusPercentage = hasBonuses 
-        ? Math.round(((eventBonusCP + firstTimeBonusCP) / baseCP) * 100)
+    const bonusPercentage = hasBonuses
+        ? (firstTime ? 100 : 0) + (bonusCP && bonusCP > 0 ? Math.round(bonusCP * 100) : 0)
         : 0;
 
     return (
@@ -235,13 +237,17 @@ export default function PackageCard({
                         
                         try {
                             // Create Stripe Checkout Session
+                            const headers: Record<string, string> = {
+                                'Content-Type': 'application/json',
+                            };
+                            if (token) {
+                                headers['Authorization'] = `Bearer ${token}`;
+                            }
                             const response = await fetch('/api/create-checkout-session', {
                                 method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
+                                headers,
                                 credentials: 'include',
-                                body: JSON.stringify({ packageId: id }),
+                                body: JSON.stringify({ packageId: id, currency }),
                             });
                             
                             if (!response.ok) {
@@ -249,7 +255,8 @@ export default function PackageCard({
                                     router.push(`/login?redirect=/donate`);
                                     return;
                                 }
-                                throw new Error('Failed to create checkout session');
+                                const errorData = await response.json().catch(() => ({}));
+                                throw new Error(errorData.detail || 'Failed to create checkout session');
                             }
                             
                             const data = await response.json();
@@ -262,7 +269,7 @@ export default function PackageCard({
                             }
                         } catch (error) {
                             console.error('Error creating checkout session:', error);
-                            alert('Failed to start checkout. Please try again.');
+                            alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
                         }
                     }}
                     className={`w-full py-3.5 rounded-lg font-bold text-base text-white transition-all duration-300 transform cursor-pointer ${

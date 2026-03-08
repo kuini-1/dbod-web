@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAward, faCheck, faLock } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
+import { API } from '@/lib/api/client';
+import { SuccessToast, WarningToast } from '@/lib/utils/toasts';
 
 interface DonationTier {
     id: number;
@@ -27,17 +30,39 @@ interface DonationTier {
 interface DonationTierCardsProps {
     totalDonated: number;
     donationTiers: DonationTier[];
+    claimedTierIds?: number[];
+    onClaimSuccess?: () => void;
 }
 
-export default function DonationTierCards({ 
-    totalDonated, 
-    donationTiers 
+export default function DonationTierCards({
+    totalDonated,
+    donationTiers,
+    claimedTierIds = [],
+    onClaimSuccess
 }: DonationTierCardsProps) {
-    if (!donationTiers || !Array.isArray(donationTiers) || donationTiers.length === 0) {
-        return null;
-    }
+    const [claimingTierId, setClaimingTierId] = useState<number | null>(null);
 
+    // Use donation value (totalDonated) to check if tier is unlocked
     const isTierReached = (tierAmount: number) => totalDonated >= tierAmount;
+    const isTierClaimed = (tierId: number) => claimedTierIds.includes(tierId);
+
+    const handleClaim = async (tierId: number) => {
+        if (claimingTierId) return;
+        setClaimingTierId(tierId);
+        try {
+            const response = await API.post('/donation-tiers/claim', { tierId });
+            if (response.status === 200 && response.data?.success) {
+                SuccessToast.fire(response.data.message || 'Rewards claimed successfully!');
+                onClaimSuccess?.();
+            } else {
+                WarningToast.fire(response.data?.message || 'Failed to claim rewards');
+            }
+        } catch (error) {
+            WarningToast.fire('Failed to claim rewards');
+        } finally {
+            setClaimingTierId(null);
+        }
+    };
 
     // Sort tiers by amount
     const sortedTiers = [...donationTiers].sort((a, b) => (a.amount || 0) - (b.amount || 0));
@@ -46,8 +71,9 @@ export default function DonationTierCards({
         <div className="w-full space-y-4">
             {sortedTiers.map((tier, index) => {
                 const reached = isTierReached(tier.amount || 0);
+                const claimed = isTierClaimed(tier.id);
                 const amountNeeded = Math.max(0, (tier.amount || 0) - totalDonated);
-                
+
                 return (
                     <div
                         key={tier.id || `tier-${tier.amount || index}-${index}`}
@@ -65,11 +91,11 @@ export default function DonationTierCards({
                                         ? 'bg-gradient-to-br from-red-500/30 to-red-600/30 border border-red-400/50'
                                         : 'bg-stone-700/50 border border-white/10'
                                 }`}>
-                                    <FontAwesomeIcon 
-                                        icon={faAward} 
+                                    <FontAwesomeIcon
+                                        icon={faAward}
                                         className={`text-xl ${
                                             reached ? 'text-red-400' : 'text-white/60'
-                                        }`} 
+                                        }`}
                                     />
                                 </div>
                                 <div>
@@ -85,14 +111,21 @@ export default function DonationTierCards({
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {/* Status Badge */}
                             <div className={`px-4 py-2 rounded-full font-bold text-sm ${
-                                reached
+                                claimed
                                     ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                    : 'bg-stone-700/50 text-white/60 border border-white/10'
+                                    : reached
+                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                        : 'bg-stone-700/50 text-white/60 border border-white/10'
                             }`}>
-                                {reached ? (
+                                {claimed ? (
+                                    <span className="flex items-center gap-2">
+                                        <FontAwesomeIcon icon={faCheck} className="text-xs" />
+                                        Claimed
+                                    </span>
+                                ) : reached ? (
                                     <span className="flex items-center gap-2">
                                         <FontAwesomeIcon icon={faCheck} className="text-xs" />
                                         Unlocked
@@ -114,10 +147,10 @@ export default function DonationTierCards({
                                     <span>${totalDonated.toLocaleString()} / ${tier.amount || 0}</span>
                                 </div>
                                 <div className="h-2 bg-stone-800/50 rounded-full overflow-hidden">
-                                    <div 
+                                    <div
                                         className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full transition-all duration-500"
-                                        style={{ 
-                                            width: `${Math.min((totalDonated / (tier.amount || 1)) * 100, 100)}%` 
+                                        style={{
+                                            width: `${Math.min((totalDonated / (tier.amount || 1)) * 100, 100)}%`
                                         }}
                                     />
                                 </div>
@@ -165,11 +198,15 @@ export default function DonationTierCards({
                             </ul>
                         </div>
 
-                        {/* Claim Button */}
-                        {reached && (
+                        {/* Claim Button - only when reached and not yet claimed */}
+                        {reached && !claimed && (
                             <div className="mt-4 pt-4 border-t border-white/10">
-                                <button className="w-full py-3 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer">
-                                    Claim Rewards
+                                <button
+                                    onClick={() => handleClaim(tier.id)}
+                                    disabled={claimingTierId === tier.id}
+                                    className="w-full py-3 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                >
+                                    {claimingTierId === tier.id ? 'Claiming...' : 'Claim Rewards'}
                                 </button>
                             </div>
                         )}

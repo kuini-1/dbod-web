@@ -155,11 +155,9 @@ export default function PopupBanner() {
         }
 
         const currentPopup = popups[currentPopupIndex];
-        const price = currentPopup.price; // Price in USD
 
-        if (!price || price <= 0) {
-            alert('Price not specified for this package. Please contact support or set a price in the banner settings.');
-            setIsPurchasing(false);
+        if (!currentPopup.packageId) {
+            alert('This banner is not configured for purchase. Please contact support.');
             return;
         }
 
@@ -174,19 +172,23 @@ export default function PopupBanner() {
                 document.cookie = `token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Lax${secureFlag}`;
             }
 
-            // Create Stripe Checkout Session
+            // Create Stripe Checkout Session - send packageId; price comes from package
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
             const response = await fetch('/api/create-checkout-session', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers,
                 credentials: 'include',
                 body: JSON.stringify({ 
-                    amount: price, // Send price in USD
-                    packageId: currentPopup.packageId, // Optional, for backward compatibility
-                    bannerId: currentPopup.id, // Banner ID for item delivery
+                    packageId: currentPopup.packageId,
+                    bannerId: currentPopup.id,
                     characterId: selectedGameCharacter.CharID,
                     characterName: selectedGameCharacter.CharName,
+                    currency: 'usd', // PopupBanner is global; use USD by default
                 }),
             });
 
@@ -195,7 +197,8 @@ export default function PopupBanner() {
                     router.push(`/login?redirect=/donate`);
                     return;
                 }
-                throw new Error('Failed to create checkout session');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || 'Failed to create checkout session');
             }
 
             const data = await response.json();
@@ -208,7 +211,7 @@ export default function PopupBanner() {
             }
         } catch (error) {
             console.error('Error creating checkout session:', error);
-            alert('Failed to start checkout. Please try again.');
+            alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
             setIsPurchasing(false);
         }
     };
@@ -434,14 +437,16 @@ export default function PopupBanner() {
                                     <div className="text-center pt-2">
                                         <div className="text-sm text-slate-400 mb-1">Special Offer</div>
                                         <div className="text-3xl font-bold text-white">
-                                            ${currentPopup.price?.toFixed(2) || '9.99'} USD
+                                            {currentPopup.packageId && currentPopup.price != null
+                                                ? `$${currentPopup.price.toFixed(2)} USD`
+                                                : 'Contact support'}
                                         </div>
                                     </div>
                                     
                                     {/* Purchase Button */}
                                     <button
                                         onClick={handlePurchase}
-                                        disabled={isPurchasing || !selectedGameCharacter}
+                                        disabled={isPurchasing || !selectedGameCharacter || !currentPopup.packageId}
                                         className="w-full h-14 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-lg font-semibold text-lg text-white flex items-center justify-center gap-2 border-0 outline-none focus:outline-none leading-none hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-200 cursor-pointer"
                                     >
                                             {isPurchasing ? (

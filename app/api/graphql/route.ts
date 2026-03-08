@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import popup_banners from '../../../lib/models/popup_banners';
 import items from '../../../lib/models/items';
 import popup_banner_items from '../../../lib/models/popup_banner_items';
+import { packages } from '../../../lib/models/packages';
 
 type GraphQLRequestBody = {
   query?: string;
@@ -70,6 +71,14 @@ export async function POST(request: NextRequest) {
     const itemByTblidx = new Map<number, any>();
     for (const it of itemRows as any[]) itemByTblidx.set(Number(it.tblidx), it);
 
+    // Load packages for banners with packageId
+    const packageIds = Array.from(new Set((banners as any[]).map((b) => b.packageId).filter(Boolean)));
+    const packageRows = packageIds.length
+      ? await packages.findAll({ where: { id: packageIds }, raw: true })
+      : [];
+    const packageById = new Map<number, any>();
+    for (const p of packageRows as any[]) packageById.set(Number(p.id), p);
+
     const itemsByBannerId = new Map<number, any[]>();
     for (const row of bannerItemRows as any[]) {
       const bannerId = Number(row.bannerId);
@@ -93,16 +102,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4) Shape GraphQL-like response (no selection-set projection yet)
-    const result = (banners as any[]).map((b) => ({
-      id: b.id,
-      title: b[`title_${safeLang}`] || b.title_en || '',
-      active: !!b.active,
-      price: b.price ? parseFloat(b.price) : null,
-      packageId: b.packageId ?? null,
-      cashPoints: b.cashPoints ? Number(b.cashPoints) : null,
-      items: itemsByBannerId.get(Number(b.id)) || [],
-    }));
+    // 4) Shape GraphQL-like response; when packageId set, derive price/cashPoints from package
+    const result = (banners as any[]).map((b) => {
+      const pkg = b.packageId ? packageById.get(Number(b.packageId)) : null;
+      return {
+        id: b.id,
+        title: b[`title_${safeLang}`] || b.title_en || '',
+        active: !!b.active,
+        price: pkg ? parseFloat(pkg.price) : (b.price ? parseFloat(b.price) : null),
+        packageId: b.packageId ?? null,
+        cashPoints: pkg ? Number(pkg.cashPoints) : (b.cashPoints ? Number(b.cashPoints) : null),
+        items: itemsByBannerId.get(Number(b.id)) || [],
+      };
+    });
 
     return NextResponse.json({ data: { popupBanners: result } }, { status: 200 });
   } catch (error: any) {

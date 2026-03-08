@@ -9,6 +9,13 @@ import PackageCard from '@/components/donation/PackageCard';
 import UrgencyIndicator from '@/components/donation/UrgencyIndicator';
 import DonationTierCards from '@/components/donation/DonationTierCards';
 import QuickPurchase from '@/components/donation/QuickPurchase';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface DonationTier {
     id: number;
@@ -36,10 +43,18 @@ interface DonationPackage {
     CP: number;
 }
 
+const CURRENCIES = [
+    { code: 'usd', label: 'USD', region: 'International' },
+    { code: 'brl', label: 'BRL', region: 'Brazil (PIX)' },
+    { code: 'krw', label: 'KRW', region: 'Korea (Kakao Pay, Payco, Naver Pay)' },
+    { code: 'eur', label: 'EUR', region: 'Europe (iDEAL, Bancontact, etc.)' },
+] as const;
+
 export default function DonatePage() {
     const [donationData, setDonationData] = useState<any>(null);
     const [donationTiers, setDonationTiers] = useState<DonationTier[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currency, setCurrency] = useState<string>('usd');
 
     useEffect(() => {
         (async () => {
@@ -91,7 +106,8 @@ export default function DonatePage() {
                     ...packagesResponse.data,
                     TotalDonated: infoResponse.data?.TotalDonated || 0,
                     FirstTimeDonate: packagesResponse.data?.FirstTimeDonate ?? infoResponse.data?.FirstTimeDonate ?? true,
-                    BonusCP: packagesResponse.data?.BonusCP ?? 0.25
+                    BonusCP: packagesResponse.data?.BonusCP ?? 0.25,
+                    claimedTierIds: infoResponse.data?.claimedTierIds || []
                 };
                 
                 setDonationData(combinedData);
@@ -108,7 +124,8 @@ export default function DonatePage() {
                         { id: 6, price: 100, CP: 1250 }
                     ],
                     BonusCP: 0.25,
-                    FirstTimeDonate: true
+                    FirstTimeDonate: true,
+                    claimedTierIds: []
                 });
             } finally {
                 setLoading(false);
@@ -190,6 +207,23 @@ export default function DonatePage() {
                         <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto font-light">
                             Get Cash Points instantly and unlock exclusive rewards
                         </p>
+
+                        {/* Currency selector for regional payment methods */}
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                            <span className="text-white/70 text-sm">Payment currency:</span>
+                            <Select value={currency} onValueChange={setCurrency}>
+                                <SelectTrigger className="w-[280px] sm:w-[320px]">
+                                    <SelectValue placeholder="Select currency" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {CURRENCIES.map((c) => (
+                                        <SelectItem key={c.code} value={c.code}>
+                                            {c.label} — {c.region}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
 
@@ -203,6 +237,7 @@ export default function DonatePage() {
                 <QuickPurchase 
                     bonusCP={donationData?.BonusCP}
                     firstTime={donationData?.FirstTimeDonate}
+                    currency={currency}
                 />
 
                 {/* Main Content: Packages and Tier Cards */}
@@ -234,6 +269,7 @@ export default function DonatePage() {
                                         isBestValue={isBestValue}
                                         isRecommended={isRecommended}
                                         index={index}
+                                        currency={currency}
                                     />
                                 );
                             })}
@@ -251,6 +287,18 @@ export default function DonatePage() {
                                     <DonationTierCards 
                                         totalDonated={donationData?.TotalDonated || 0}
                                         donationTiers={donationTiers}
+                                        claimedTierIds={donationData?.claimedTierIds || []}
+                                        onClaimSuccess={() => {
+                                            API.get('/donation-info').then((res) => {
+                                                if (res.data?.claimedTierIds !== undefined) {
+                                                    setDonationData((prev: any) => ({
+                                                        ...prev,
+                                                        TotalDonated: res.data.TotalDonated,
+                                                        claimedTierIds: res.data.claimedTierIds
+                                                    }));
+                                                }
+                                            });
+                                        }}
                                     />
                                 </div>
                             </div>
