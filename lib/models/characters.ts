@@ -63,6 +63,7 @@ interface CharactersAttributes {
     CCBD_Limit?: number;
     CCBD_Entry?: number;
     Item_Worth?: number;
+    CCBD_Last_Refresh?: number;
 }
 export interface CharactersInput extends Optional<CharactersAttributes, 'CharID'> {}
 export interface CharactersOuput extends Required<CharactersAttributes> {}
@@ -129,6 +130,7 @@ class characters extends Model<CharactersAttributes, CharactersInput> implements
     public CCBD_Limit!: number
     public CCBD_Entry!: number
     public Item_Worth!: number
+    public CCBD_Last_Refresh!: number
 }
   
 characters.init({
@@ -196,7 +198,8 @@ characters.init({
     CCBD_Token: { type: DataTypes.TINYINT },
     CCBD_Limit: { type: DataTypes.TINYINT },
     CCBD_Entry: { type: DataTypes.TINYINT },
-    Item_Worth: { type: DataTypes.TINYINT }
+    Item_Worth: { type: DataTypes.TINYINT },
+    CCBD_Last_Refresh: { type: DataTypes.BIGINT }
   }, {
     freezeTableName: true,
     timestamps: false,

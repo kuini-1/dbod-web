@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { characters } from '../../../lib/models/characters';
 import { accounts } from '../../../lib/models/accounts';
 import { getUserFromRequest } from '../../../lib/auth/utils';
+import { syncCCBDEntry } from '../../../lib/utils/character-bridge';
 
 const REFILL_COST_CP = 25;
 
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
         }
 
         await account.update({ mallpoints: mallpoints - REFILL_COST_CP });
-        await char.update({ CCBD_Entry: ccbdLimit });
+        await syncCCBDEntry(char.CharID, ccbdLimit);
 
         return NextResponse.json({
             success: true,

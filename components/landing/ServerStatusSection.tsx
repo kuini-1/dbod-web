@@ -86,43 +86,43 @@ export function ServerStatusSection({ status }: ServerStatusSectionProps) {
                     <div className="mb-6">
                         <h2 className="text-2xl font-bold text-red-100/90 mb-4">Active Bonuses</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {status.bonuses.soloExpBonus && status.bonuses.soloExpBonus > 0 && (
+                            {(status.bonuses.soloExpBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl p-4 backdrop-blur-sm border border-green-500/30">
                                     <div className="text-sm text-green-400 font-semibold mb-1">Solo EXP</div>
                                     <div className="text-2xl font-bold text-green-300">+{status.bonuses.soloExpBonus}%</div>
                                 </div>
                             )}
-                            {status.bonuses.partyExpBonus && status.bonuses.partyExpBonus > 0 && (
+                            {(status.bonuses.partyExpBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl p-4 backdrop-blur-sm border border-blue-500/30">
                                     <div className="text-sm text-blue-400 font-semibold mb-1">Party EXP</div>
                                     <div className="text-2xl font-bold text-blue-300">+{status.bonuses.partyExpBonus}%</div>
                                 </div>
                             )}
-                            {status.bonuses.questExpBonus && status.bonuses.questExpBonus > 0 && (
+                            {(status.bonuses.questExpBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl p-4 backdrop-blur-sm border border-purple-500/30">
                                     <div className="text-sm text-purple-400 font-semibold mb-1">Quest EXP</div>
                                     <div className="text-2xl font-bold text-purple-300">+{status.bonuses.questExpBonus}%</div>
                                 </div>
                             )}
-                            {status.bonuses.craftExpBonus && status.bonuses.craftExpBonus > 0 && (
+                            {(status.bonuses.craftExpBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl p-4 backdrop-blur-sm border border-yellow-500/30">
                                     <div className="text-sm text-yellow-400 font-semibold mb-1">Craft EXP</div>
                                     <div className="text-2xl font-bold text-yellow-300">+{status.bonuses.craftExpBonus}%</div>
                                 </div>
                             )}
-                            {status.bonuses.zeniDropBonus && status.bonuses.zeniDropBonus > 0 && (
+                            {(status.bonuses.zeniDropBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-xl p-4 backdrop-blur-sm border border-red-500/30">
                                     <div className="text-sm text-red-400 font-semibold mb-1">Zeni Drop</div>
                                     <div className="text-2xl font-bold text-red-300">+{status.bonuses.zeniDropBonus}%</div>
                                 </div>
                             )}
-                            {status.bonuses.questMoneyBonus && status.bonuses.questMoneyBonus > 0 && (
+                            {(status.bonuses.questMoneyBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-xl p-4 backdrop-blur-sm border border-emerald-500/30">
                                     <div className="text-sm text-emerald-400 font-semibold mb-1">Quest Money</div>
                                     <div className="text-2xl font-bold text-emerald-300">+{status.bonuses.questMoneyBonus}%</div>
                                 </div>
                             )}
-                            {status.bonuses.upgradeRateBonus && status.bonuses.upgradeRateBonus > 0 && (
+                            {(status.bonuses.upgradeRateBonus ?? 0) > 0 && (
                                 <div className="bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-xl p-4 backdrop-blur-sm border border-pink-500/30">
                                     <div className="text-sm text-pink-400 font-semibold mb-1">Upgrade Rate</div>
                                     <div className="text-2xl font-bold text-pink-300">+{status.bonuses.upgradeRateBonus}%</div>

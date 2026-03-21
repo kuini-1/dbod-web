@@ -64,17 +64,38 @@ export async function GET(request: NextRequest) {
             ch9: channelData ? flip(channelData.ch9, fallback.channels.ch9) : fallback.channels.ch9
         };
 
+        // Bridge may return camelCase or snake_case; values may be 0-100 (percent) or 0-1 (decimal)
+        const toPercent = (v: number | undefined, snake?: number | undefined) => {
+            const val = v ?? snake ?? 0;
+            if (val > 0 && val <= 1) return Math.round(val * 100); // decimal format
+            return val;
+        };
         const bonuses = bonusData ? {
-            soloExpBonus: bonusData.soloExpBonus ?? 0,
-            partyExpBonus: bonusData.partyExpBonus ?? 0,
-            questExpBonus: bonusData.questExpBonus ?? 0,
-            craftExpBonus: bonusData.craftExpBonus ?? 0,
-            zeniDropBonus: bonusData.zeniDropBonus ?? 0,
-            questMoneyBonus: bonusData.questMoneyBonus ?? 0,
-            upgradeRateBonus: bonusData.upgradeRateBonus ?? 0
+            soloExpBonus: toPercent(bonusData.soloExpBonus, (bonusData as Record<string, unknown>).solo_exp_bonus as number),
+            partyExpBonus: toPercent(bonusData.partyExpBonus, (bonusData as Record<string, unknown>).party_exp_bonus as number),
+            questExpBonus: toPercent(bonusData.questExpBonus, (bonusData as Record<string, unknown>).quest_exp_bonus as number),
+            craftExpBonus: toPercent(bonusData.craftExpBonus, (bonusData as Record<string, unknown>).craft_exp_bonus as number),
+            zeniDropBonus: toPercent(bonusData.zeniDropBonus, (bonusData as Record<string, unknown>).zeni_drop_bonus as number),
+            questMoneyBonus: toPercent(bonusData.questMoneyBonus, (bonusData as Record<string, unknown>).quest_money_bonus as number),
+            upgradeRateBonus: toPercent(bonusData.upgradeRateBonus, (bonusData as Record<string, unknown>).upgrade_rate_bonus as number)
         } : null;
 
-        const channelBonuses = Array.isArray(bonusData?.channelBonuses) ? bonusData.channelBonuses : [];
+        const rawChannelBonuses = Array.isArray(bonusData?.channelBonuses)
+            ? bonusData.channelBonuses
+            : Array.isArray((bonusData as Record<string, unknown>)?.channel_bonuses)
+                ? (bonusData as Record<string, unknown>).channel_bonuses as unknown[]
+                : [];
+        const channelBonuses = rawChannelBonuses.map((b: Record<string, unknown>) => ({
+            channelId: b.channelId ?? b.channel_id ?? 0,
+            maxLpPercent: toPercent(b.maxLpPercent as number, b.max_lp_percent as number),
+            maxEpPercent: toPercent(b.maxEpPercent as number, b.max_ep_percent as number),
+            physicalOffencePercent: toPercent(b.physicalOffencePercent as number, b.physical_offence_percent as number),
+            energyOffencePercent: toPercent(b.energyOffencePercent as number, b.energy_offence_percent as number),
+            physicalDefencePercent: toPercent(b.physicalDefencePercent as number, b.physical_defence_percent as number),
+            energyDefencePercent: toPercent(b.energyDefencePercent as number, b.energy_defence_percent as number),
+            attackRatePercent: toPercent(b.attackRatePercent as number, b.attack_rate_percent as number),
+            dodgeRatePercent: toPercent(b.dodgeRatePercent as number, b.dodge_rate_percent as number)
+        }));
 
         return NextResponse.json({
             player_count,
