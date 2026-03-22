@@ -43,12 +43,5 @@ items.init({
     sequelize: dbod_acc,
 });
 
-// Create table if it doesn't exist
-items.sync({ alter: true }).then(() => {
-    console.log('Items table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating items table:', error);
-});
-
 export default items;
 

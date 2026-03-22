@@ -49,12 +49,5 @@ popup_banner_items.init({
     sequelize: dbod_acc,
 });
 
-// Create table if it doesn't exist
-popup_banner_items.sync({ alter: true }).then(() => {
-    console.log('Popup banner items table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating popup banner items table:', error);
-});
-
 export default popup_banner_items;
 

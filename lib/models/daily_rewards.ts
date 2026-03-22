@@ -79,17 +79,4 @@ const daily_reward_claims = dbod_acc.define<DailyRewardClaim>('daily_reward_clai
     tableName: 'daily_reward_claims'
 });
 
-// Create tables if they don't exist
-daily_rewards.sync({ alter: true }).then(() => {
-    console.log('Daily rewards table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating daily rewards table:', error);
-});
-
-daily_reward_claims.sync({ alter: true }).then(() => {
-    console.log('Daily reward claims table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating daily reward claims table:', error);
-});
-
 export { daily_rewards, daily_reward_claims };

@@ -60,25 +60,4 @@ popup_banners.init({
     sequelize: dbod_acc,
 });
 
-// Create table if it doesn't exist
-// Also drop deprecated columns `content_en`, `content_kr`, `imageUrl` if they exist.
-(async () => {
-    try {
-        const qi = dbod_acc.getQueryInterface();
-        for (const col of ['content_en', 'content_kr', 'imageUrl']) {
-            try {
-                await qi.removeColumn('popup_banners', col);
-                console.log(`Dropped deprecated popup_banners.${col} column`);
-            } catch (e) {
-                // Column may not exist; ignore.
-            }
-        }
-
-        await popup_banners.sync({ alter: true });
-        console.log('Popup banners table created or updated successfully');
-    } catch (error) {
-        console.error('Error creating popup banners table:', error);
-    }
-})();
-
 export default popup_banners;

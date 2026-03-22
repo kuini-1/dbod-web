@@ -1,38 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { daily_rewards, daily_reward_claims } from '../../../../lib/models/daily_rewards';
+import { daily_logins } from '../../../../lib/models/daily_logins';
 import { event_reward } from '../../../../lib/models/accounts';
 import { Op } from 'sequelize';
-import { dbod_acc } from '../../../../lib/database/connection';
 import { getUserFromRequest } from '../../../../lib/auth/utils';
-import { DataTypes, Model } from 'sequelize';
-
-interface DailyLoginInstance extends Model {
-    id: number;
-    AccountID: number;
-    loginDate: Date;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-const daily_logins = dbod_acc.define<DailyLoginInstance>('daily_logins', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    AccountID: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    loginDate: {
-        type: DataTypes.DATE,
-        allowNull: false
-    }
-}, {
-    tableName: 'daily_logins',
-    timestamps: true,
-    freezeTableName: true
-});
 
 export async function POST(request: NextRequest) {
     try {

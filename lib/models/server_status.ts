@@ -93,11 +93,4 @@ server_status.init({
     sequelize: dbod_acc,
 })
 
-let serverStatusSynced = false;
-export async function ensureServerStatusTable() {
-    if (serverStatusSynced) return;
-    await server_status.sync({ alter: true });
-    serverStatusSynced = true;
-}
-
 export { server_status }

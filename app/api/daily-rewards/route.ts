@@ -1,45 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { daily_rewards, daily_reward_claims } from '../../../lib/models/daily_rewards';
-import { event_reward } from '../../../lib/models/accounts';
-import { Op, DataTypes, Model } from 'sequelize';
-import { dbod_acc } from '../../../lib/database/connection';
+import { daily_logins } from '../../../lib/models/daily_logins';
+import { Op } from 'sequelize';
 import { getUserFromRequest } from '../../../lib/auth/utils';
-
-interface DailyLoginInstance extends Model {
-    id: number;
-    AccountID: number;
-    loginDate: Date;
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
-// Add daily login tracking table
-const daily_logins = dbod_acc.define<DailyLoginInstance>('daily_logins', {
-    id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true
-    },
-    AccountID: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    loginDate: {
-        type: DataTypes.DATE,
-        allowNull: false
-    }
-}, {
-    tableName: 'daily_logins',
-    timestamps: true,
-    freezeTableName: true
-});
-
-// Create table if it doesn't exist
-daily_logins.sync({ alter: true }).then(() => {
-    console.log('Daily logins table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating daily logins table:', error);
-});
 
 export async function GET(request: NextRequest) {
     try {

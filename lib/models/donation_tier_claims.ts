@@ -46,10 +46,4 @@ donation_tier_claims.init({
     ],
 });
 
-donation_tier_claims.sync({ alter: true }).then(() => {
-    console.log('Donation tier claims table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating donation tier claims table:', error);
-});
-
 export { donation_tier_claims };

@@ -39,6 +39,8 @@ donations.init({
     },
     Email: {
         type: DataTypes.STRING,
+        // DB column is lowercase `email`; without `field`, alter:true tries to ADD `Email` and MySQL errors (ER_DUP_FIELDNAME).
+        field: 'email',
     },
     Currency: {
         type: DataTypes.STRING
@@ -61,13 +63,6 @@ donations.init({
         { fields: ['Username'] },
         { fields: ['packageId'] }
     ]
-});
-
-// Create table if it doesn't exist
-donations.sync({ alter: true }).then(() => {
-    console.log('Donations table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating donations table:', error);
 });
 
 export { donations }

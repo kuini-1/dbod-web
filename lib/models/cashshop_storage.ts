@@ -133,11 +133,4 @@ cashshop_storage.init({
     sequelize: dbod_acc
 });
 
-// Create table if it doesn't exist
-cashshop_storage.sync({ alter: true }).then(() => {
-    console.log('Cashshop storage table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating cashshop storage table:', error);
-});
-
 export default cashshop_storage;

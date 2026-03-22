@@ -53,23 +53,4 @@ donation_tiers.init({
     tableName: 'donation_tiers'
 });
 
-// Sync table (but don't seed here, backend handles seeding)
-// Also drop deprecated `rewards` column if it exists.
-(async () => {
-    try {
-        const qi = dbod_acc.getQueryInterface();
-        try {
-            await qi.removeColumn('donation_tiers', 'rewards');
-            console.log('Dropped deprecated donation_tiers.rewards column');
-        } catch (e) {
-            // Column may not exist; ignore.
-        }
-
-        await donation_tiers.sync({ alter: true });
-        console.log('Donation tiers table synced successfully');
-    } catch (error) {
-        console.error('Error syncing donation tiers table:', error);
-    }
-})();
-
 export { donation_tiers };

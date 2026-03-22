@@ -55,28 +55,4 @@ packages.init({
     sequelize: dbod_acc,
 });
 
-const SEED_PACKAGES = [
-    { price: 5, cashPoints: 50, isForDonation: 1, sortOrder: 1, name: '$5 Package' },
-    { price: 10, cashPoints: 105, isForDonation: 1, sortOrder: 2, name: '$10 Package' },
-    { price: 25, cashPoints: 275, isForDonation: 1, sortOrder: 3, name: '$25 Package' },
-    { price: 50, cashPoints: 575, isForDonation: 1, sortOrder: 4, name: '$50 Package' },
-    { price: 80, cashPoints: 960, isForDonation: 1, sortOrder: 5, name: '$80 Package' },
-    { price: 100, cashPoints: 1250, isForDonation: 1, sortOrder: 6, name: '$100 Package' },
-];
-
-(async () => {
-    try {
-        await packages.sync({ alter: true });
-        const count = await packages.count();
-        if (count === 0) {
-            await packages.bulkCreate(SEED_PACKAGES as any);
-            console.log('Packages table seeded with 6 donation packages');
-        } else {
-            console.log('Packages table already has data, skipping seed');
-        }
-    } catch (error) {
-        console.error('Error creating/seeding packages table:', error);
-    }
-})();
-
 export { packages };

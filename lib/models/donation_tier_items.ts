@@ -49,11 +49,5 @@ donation_tier_items.init({
     tableName: 'donation_tier_items',
 });
 
-donation_tier_items.sync({ alter: true }).then(() => {
-    console.log('Donation tier items table created or updated successfully');
-}).catch((error) => {
-    console.error('Error creating donation tier items table:', error);
-});
-
 export { donation_tier_items };
 
