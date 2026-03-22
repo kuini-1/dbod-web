@@ -423,7 +423,7 @@ characters.init(
             defaultValue: 0,
         },
         // Web / patch columns (not in base dbod_char.sql dump)
-        CCBD_Token: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+        CCBD_Token: { type: DataTypes.SMALLINT.UNSIGNED, allowNull: true, defaultValue: 0 },
         CCBD_Limit: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 5 },
         CCBD_Entry: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 5 },
         Item_Worth: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },

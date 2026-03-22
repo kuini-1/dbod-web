@@ -516,6 +516,12 @@ export default function PanelPage() {
                         setSelectedChar({ ...selectedChar, CCBD_Entry: newCCBDEntry });
                     }
                 }}
+                onUpgradeSuccess={(payload) => {
+                    fetchCharacters();
+                    if (selectedChar) {
+                        setSelectedChar({ ...selectedChar, ...payload });
+                    }
+                }}
             />
             <CharacterDetailsModal
                 char={selectedChar}
