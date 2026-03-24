@@ -1,4 +1,5 @@
 import cashshop_storage from '../models/cashshop_storage';
+import type { Transaction } from "sequelize";
 
 /**
  * Add items to cashshop_storage for a user
@@ -12,6 +13,9 @@ export async function addItemsToCashshop(
     options?: {
         senderName?: string;
         price?: number;
+        giftCharId?: number | null;
+        buyerAccountId?: number;
+        transaction?: Transaction;
     }
 ): Promise<void> {
     const now = new Date();
@@ -34,7 +38,7 @@ export async function addItemsToCashshop(
                 AccountID: accountId,
                 HLSitemTblidx: item.tblidx,
                 StackCount: currentStackCount,
-                giftCharId: null, // Not sending as gift
+                giftCharId: options?.giftCharId ?? null,
                 IsRead: 0,
                 SenderName: options?.senderName || null,
                 year: now.getFullYear(),
@@ -45,9 +49,11 @@ export async function addItemsToCashshop(
                 second: now.getSeconds(),
                 millisecond: now.getMilliseconds(),
                 isMoved: 0,
-                Buyer: accountId, // Buyer is the same as AccountID
+                Buyer: options?.buyerAccountId ?? accountId,
                 price: options?.price || 0,
                 ItemID: 0,
+            }, {
+                transaction: options?.transaction,
             });
         }
     }

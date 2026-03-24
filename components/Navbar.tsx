@@ -77,6 +77,9 @@ export function Navbar() {
                             <Link href="/donate" className={`hover:text-red-400 transition-colors ${pathname === '/donate' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {local.navItemDonation}
                             </Link>
+                            <Link href="/cashshop" className={`hover:text-red-400 transition-colors ${pathname === '/cashshop' ? 'text-red-400' : 'text-stone-300'}`}>
+                                {local.navItemCashshop}
+                            </Link>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">

@@ -4,7 +4,7 @@ import { getUserFromRequest } from '../../../lib/auth/utils';
 import { syncItemWorth } from '../../../lib/utils/character-bridge';
 
 const TOKENS_PER_PERCENT = 5;
-const MAX_ITEM_WORTH = 255;
+const MAX_ITEM_WORTH = 65535;
 
 export async function POST(request: NextRequest) {
     try {

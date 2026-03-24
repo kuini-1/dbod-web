@@ -4,6 +4,7 @@ export const local: Record<string, string> = {
     navItemHome: "Home",
     navItemNews: "News",
     navItemDonation: "Donation",
+    navItemCashshop: "Cashshop",
     navItemLanguage: "Language",
     navItemAccount: "Account",
     navSubItemLogin: "Login",

@@ -73,10 +73,10 @@ function getTokenFromRequest(request: NextRequest, isApiRoute: boolean = false):
     return undefined;
 }
 
-function verifyToken(token: string): { subject: string } | null {
+function verifyToken(token: string): { subject: string; isGm?: number } | null {
     try {
         const verify: any = jwt.verify(token, JWT_TOKEN);
-        return verify ? { subject: verify.subject } : null;
+        return verify ? { subject: verify.subject, isGm: Number(verify.isGm || 0) } : null;
     } catch (error) {
         return null;
     }
@@ -84,13 +84,14 @@ function verifyToken(token: string): { subject: string } | null {
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    const isAdminApiRoute = pathname.startsWith('/api/admin');
 
     // Check if it's a protected route
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
     const isProtectedApiRoute = protectedApiRoutes.some(route => pathname.startsWith(route));
 
-    if (isProtectedRoute || isProtectedApiRoute) {
-        const token = getTokenFromRequest(request, isProtectedApiRoute);
+    if (isProtectedRoute || isProtectedApiRoute || isAdminApiRoute) {
+        const token = getTokenFromRequest(request, isProtectedApiRoute || isAdminApiRoute);
         
         // Debug logging (can be removed in production)
         if (process.env.NODE_ENV === 'development') {
@@ -116,7 +117,7 @@ export async function middleware(request: NextRequest) {
         }
         
         if (!token) {
-            if (isProtectedApiRoute) {
+            if (isProtectedApiRoute || isAdminApiRoute) {
                 return NextResponse.json(
                     { message: 'Unauthorized' },
                     { status: 401 }
@@ -135,7 +136,7 @@ export async function middleware(request: NextRequest) {
             if (process.env.NODE_ENV === 'development') {
                 console.log(`[Middleware] Token verification failed for route: ${pathname}`);
             }
-            if (isProtectedApiRoute) {
+            if (isProtectedApiRoute || isAdminApiRoute) {
                 return NextResponse.json(
                     { message: 'Unauthorized' },
                     { status: 401 }
@@ -147,8 +148,15 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(loginUrl);
         }
 
+        if (isAdminApiRoute && Number(verified.isGm || 0) !== 10) {
+            return NextResponse.json(
+                { message: 'Forbidden' },
+                { status: 403 }
+            );
+        }
+
         // Add username to request headers for API routes (full user lookup happens in API route)
-        if (isProtectedApiRoute) {
+        if (isProtectedApiRoute || isAdminApiRoute) {
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-username', verified.subject);
             return NextResponse.next({

@@ -62,6 +62,9 @@ const EQUIPMENT_OPTIONS: { id: EquipmentCategoryId; label: string }[] = EQUIPMEN
     label: EQUIPMENT_CATEGORY_LABELS[id],
 }));
 
+/** Matches unsigned SMALLINT `Item_Worth` column (was tinyint 0–255). */
+const ITEM_WORTH_MAX = 65535;
+
 export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints = 0, isOpen, onClose, onRefillSuccess, onUpgradeSuccess }: UpgradeEquipmentModalProps) {
     const [isClosing, setIsClosing] = useState(false);
     const [upgradeAmount, setUpgradeAmount] = useState(0);
@@ -82,7 +85,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
 
     const ccbdTokens = char?.CCBD_Token ?? 0;
     const ccbdLimit = char?.CCBD_Limit ?? 0;
-    const maxAffordableByCap = Math.max(0, 255 - itemWorth);
+    const maxAffordableByCap = Math.max(0, ITEM_WORTH_MAX - itemWorth);
     const maxUpgrades = Math.min(Math.floor(ccbdTokens / 5), maxAffordableByCap);
 
     const canRefill = ccbdEntry < ccbdLimit && mallpoints >= 25;
@@ -140,7 +143,8 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
         };
     }, [isOpen]);
 
-    const itemWorthAfterPreview = upgradeAmount > 0 ? Math.min(255, itemWorth + upgradeAmount) : itemWorth;
+    const itemWorthAfterPreview =
+        upgradeAmount > 0 ? Math.min(ITEM_WORTH_MAX, itemWorth + upgradeAmount) : itemWorth;
 
     const preview = useMemo(() => {
         if (!enchantRows?.length) {
@@ -305,11 +309,13 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                                 <div className="text-stone-300">
                                     {local.currentUpgradedStats}: <span className="text-red-400 font-bold">{itemWorth}%</span>
                                 </div>
-                                {maxUpgrades === 0 && itemWorth < 255 && (
+                                {maxUpgrades === 0 && itemWorth < ITEM_WORTH_MAX && (
                                     <p className="text-amber-400/90 text-sm">Need 5 CCBD tokens per upgrade. You have {ccbdTokens} tokens.</p>
                                 )}
-                                {itemWorth >= 255 && (
-                                    <p className="text-amber-400/90 text-sm">Maximum upgraded equipment stats (255%) reached.</p>
+                                {itemWorth >= ITEM_WORTH_MAX && (
+                                    <p className="text-amber-400/90 text-sm">
+                                        Maximum upgraded equipment stats ({ITEM_WORTH_MAX}%) reached.
+                                    </p>
                                 )}
                             </div>
                             <div className="flex flex-wrap items-center gap-4">
@@ -421,52 +427,48 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                                     const b0 = preview?.boundsBefore.get(row.tblidx);
                                     const b1 = preview?.boundsAfter.get(row.tblidx);
                                     const label = getEnchantDisplayName(row, effectNameBySeTblidx);
+                                    const range0 =
+                                        b0 && b0.max >= 1
+                                            ? formatString(local.enchantPreviewRange, b0.min, b0.max)
+                                            : '—';
+                                    const range1 =
+                                        b1 && b1.max >= 1
+                                            ? formatString(local.enchantPreviewRange, b1.min, b1.max)
+                                            : '—';
                                     return (
                                         <div
                                             key={row.tblidx}
-                                            className="flex items-start gap-2 text-sm py-2 px-2 bg-stone-900/50 rounded border border-red-500/10"
+                                            className="flex items-center gap-3 text-sm py-2.5 px-3 bg-stone-900/50 rounded border border-red-500/10"
                                         >
                                             <button
                                                 type="button"
                                                 onClick={() => setStatDetailRow(row)}
-                                                className="shrink-0 mt-0.5 w-9 h-9 flex items-center justify-center text-red-400/90 hover:text-red-400 border border-red-500/30 hover:border-red-500/50 rounded-lg cursor-pointer transition-colors"
+                                                className="shrink-0 w-9 h-9 flex items-center justify-center text-red-400/90 hover:text-red-400 border border-red-500/30 hover:border-red-500/50 rounded-lg cursor-pointer transition-colors"
                                                 title={local.statDetailOpenAria}
                                                 aria-label={local.statDetailOpenAria}
                                             >
                                                 <FontAwesomeIcon icon={faChartLine} className="text-sm" />
                                             </button>
-                                            <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                                            <span className="text-stone-300">{label}</span>
-                                            <span className="text-stone-400 text-right sm:shrink-0">
-                                                {upgradeAmount > 0 && b0 && b1 ? (
-                                                    <>
-                                                        <span className="text-stone-500">
-                                                            {formatString(local.enchantPreviewBefore, itemWorth)}{' '}
-                                                        </span>
-                                                        {b0.max >= 1
-                                                            ? formatString(local.enchantPreviewRange, b0.min, b0.max)
-                                                            : '—'}
-                                                        <span className="text-stone-600"> → </span>
-                                                        <span className="text-stone-500">
-                                                            {formatString(local.enchantPreviewAfter, itemWorthAfterPreview)}{' '}
-                                                        </span>
-                                                        <span className="text-red-400">
-                                                            {b1.max >= 1
-                                                                ? formatString(local.enchantPreviewRange, b1.min, b1.max)
-                                                                : '—'}
-                                                        </span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className="text-stone-500">
-                                                            {formatString(local.enchantPreviewBefore, itemWorth)}{' '}
-                                                        </span>
-                                                        {b0 && b0.max >= 1
-                                                            ? formatString(local.enchantPreviewRange, b0.min, b0.max)
-                                                            : '—'}
-                                                    </>
-                                                )}
-                                            </span>
+                                            <div className="flex-1 min-w-0 grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-x-4 items-center text-left">
+                                                <div className="min-w-0 text-stone-200 font-medium leading-snug self-center">
+                                                    {label}
+                                                </div>
+                                                <div className="min-w-0 flex flex-col gap-1.5 text-stone-400 text-xs sm:text-sm leading-relaxed">
+                                                    <div>
+                                                        {formatString(local.enchantPreviewBefore, itemWorth)}:{' '}
+                                                        <span className="text-stone-300 tabular-nums">{range0}</span>
+                                                    </div>
+                                                    {upgradeAmount > 0 && b0 && b1 && (
+                                                        <div>
+                                                            {formatString(
+                                                                local.enchantPreviewAfter,
+                                                                itemWorthAfterPreview
+                                                            )}
+                                                            :{' '}
+                                                            <span className="text-red-400/95 tabular-nums">{range1}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     );

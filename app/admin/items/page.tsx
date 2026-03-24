@@ -1,12 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
 
+type AdminCashshopItem = {
+  tblidx: number;
+  wszName: string;
+  dwPriority: number;
+  dwCash: number;
+  byDiscount: number;
+  table_id: string;
+  active: boolean;
+};
+
 export default function AdminItemsPage() {
   const [actionResult, setActionResult] = useState('');
+  const [cashshopRows, setCashshopRows] = useState<AdminCashshopItem[]>([]);
+  const [cashshopLoading, setCashshopLoading] = useState(false);
+  const [cashshopError, setCashshopError] = useState('');
 
   const [giveCharId, setGiveCharId] = useState('');
   const [giveItemTblidx, setGiveItemTblidx] = useState('');
@@ -61,6 +74,26 @@ export default function AdminItemsPage() {
     }
     return [];
   }
+
+  async function loadCashshopRows() {
+    setCashshopLoading(true);
+    setCashshopError('');
+    try {
+      const res = await API.get('/admin/cashshop-items', { cache: 'no-store' });
+      if (res.status !== 200 || !res.data?.success) {
+        throw new Error(res.data?.message || res.statusText || 'Could not load cashshop rows');
+      }
+      setCashshopRows(res.data.items || []);
+    } catch (error: any) {
+      setCashshopError(error.message || 'Could not load cashshop rows');
+    } finally {
+      setCashshopLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCashshopRows();
+  }, []);
 
   return (
     <AdminShell title="Item Tools" subtitle="Deliver items to one player or every online character.">
@@ -268,6 +301,67 @@ export default function AdminItemsPage() {
         >
           Create Custom Item
         </button>
+      </AdminCard>
+
+      <AdminCard
+        title="Cashshop Rows"
+        description="All rows from table_hls_item_data. Active means dwPriority=555."
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <p className="text-xs text-white/60">
+            Total rows: <span className="font-semibold text-white/80">{cashshopRows.length}</span>
+          </p>
+          <button
+            onClick={loadCashshopRows}
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {cashshopLoading ? (
+          <p className="text-sm text-white/70">Loading cashshop rows...</p>
+        ) : cashshopError ? (
+          <p className="text-sm text-red-300">{cashshopError}</p>
+        ) : (
+          <div className="max-h-[28rem] overflow-auto rounded-xl border border-white/10">
+            <table className="min-w-full text-sm">
+              <thead className="sticky top-0 bg-stone-900/95">
+                <tr className="text-left text-white/60">
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">tblidx</th>
+                  <th className="px-3 py-2">Name</th>
+                  <th className="px-3 py-2">Priority</th>
+                  <th className="px-3 py-2">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashshopRows.map((row, idx) => (
+                  <tr
+                    key={`${row.tblidx}-${idx}`}
+                    className="border-t border-white/5 text-white/85"
+                  >
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          row.active
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                            : 'bg-stone-500/20 text-stone-300 border border-stone-400/30'
+                        }`}
+                      >
+                        {row.active ? 'ACTIVE' : 'INACTIVE'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 font-mono text-xs">{row.tblidx}</td>
+                    <td className="px-3 py-2">{row.wszName || '-'}</td>
+                    <td className="px-3 py-2">{row.dwPriority}</td>
+                    <td className="px-3 py-2">{row.dwCash} CP</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </AdminCard>
 
       {actionResult ? (

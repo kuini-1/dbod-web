@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
         console.log('  - Account found:', !!exists);
 
         if(compare){
-            const payload = { subject: exists.Username }
+            const payload = {
+                subject: exists.Username,
+                isGm: Number(exists.isGm || 0),
+            };
             const token = jwt.sign(payload, JWT_TOKEN)
             
             console.log('Login successful, setting cookie for user:', exists.Username);

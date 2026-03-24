@@ -1,0 +1,52 @@
+# --- Web / Node.js Ignore ---
+node_modules/
+.npm/
+.next/
+.svelte-kit/
+dist/
+build/
+out/
+.cache/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- C++ / Build System Ignore ---
+# Ignore build directories (common names)
+build/
+bin/
+obj/
+out/
+target/
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.pdb
+*.nls
+*.cache
+
+# Ignore CMake artifacts
+CMakeFiles/
+CMakeCache.txt
+CMakeScripts/
+_deps/
+cmake-build-debug/
+cmake-build-release/
+
+# --- Large Data & Version Control ---
+.git/
+.svn/
+.hg/
+*.log
+*.tmp
+*.bak
+*.swp
+
+# --- IDE Specific ---
+.vscode/
+.idea/
+.vs/

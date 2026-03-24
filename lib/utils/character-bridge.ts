@@ -39,10 +39,13 @@ export async function syncCCBDEntry(charId: number, value: number): Promise<void
 /**
  * Update Item_Worth in DB and notify web-bridge.
  */
+const ITEM_WORTH_MAX = 65535;
+
 export async function syncItemWorth(charId: number, value: number): Promise<void> {
-    await characters.update({ Item_Worth: value }, { where: { CharID: charId } });
+    const clamped = Math.max(0, Math.min(ITEM_WORTH_MAX, Math.floor(Number(value))));
+    await characters.update({ Item_Worth: clamped }, { where: { CharID: charId } });
     try {
-        const res = await postToBridge('/api/update-item-worth', { CharID: charId, Item_Worth: value });
+        const res = await postToBridge('/api/update-item-worth', { CharID: charId, Item_Worth: clamped });
         if (!res.ok) {
             console.error('Bridge update-item-worth failed:', res.status, await res.text());
         }

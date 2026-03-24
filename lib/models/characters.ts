@@ -426,7 +426,7 @@ characters.init(
         CCBD_Token: { type: DataTypes.SMALLINT.UNSIGNED, allowNull: true, defaultValue: 0 },
         CCBD_Limit: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 5 },
         CCBD_Entry: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 5 },
-        Item_Worth: { type: DataTypes.TINYINT, allowNull: true, defaultValue: 0 },
+        Item_Worth: { type: DataTypes.SMALLINT.UNSIGNED, allowNull: true, defaultValue: 0 },
         CCBD_Last_Refresh: { type: DataTypes.BIGINT, allowNull: true, defaultValue: 0 },
     },
     {

@@ -14,7 +14,7 @@ import { formatSystemEffectLabel } from './statDisplay';
 /**
  * Equipment upgrade milestones: every 3 levels (+3 … +15) the game runs a random-option gen/upgrade step.
  * These are **not** character Item Worth percentages — use {@link worthBudgetForCraftedPreview} with the
- * character’s actual Item_Worth (0–255) for the worth pool.
+ * character’s actual Item_Worth (0–65535, unsigned SMALLINT) for the worth pool.
  */
 export const EQUIPMENT_UPGRADE_MILESTONES = [3, 6, 9, 12, 15] as const;
 

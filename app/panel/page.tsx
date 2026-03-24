@@ -431,7 +431,7 @@ export default function PanelPage() {
                     <div className="flex flex-wrap gap-4 md:gap-10 mb-8 border-b border-white/5 pb-4">
                         <button 
                             onClick={() => setActiveTab('userInfo')} 
-                            className={`flex items-center space-x-2 font-bold text-xl transition-colors duration-300 ${
+                            className={`flex items-center space-x-2 font-bold text-xl transition-colors duration-300 cursor-pointer ${
                                 activeTab === 'userInfo' 
                                     ? "text-red-400" 
                                     : "text-white/60 hover:text-red-400"
@@ -442,7 +442,7 @@ export default function PanelPage() {
                         </button>
                         <button 
                             onClick={() => setActiveTab('characters')} 
-                            className={`flex items-center space-x-2 font-bold text-xl transition-colors duration-300 ${
+                            className={`flex items-center space-x-2 font-bold text-xl transition-colors duration-300 cursor-pointer ${
                                 activeTab === 'characters' 
                                     ? "text-red-400" 
                                     : "text-white/60 hover:text-red-400"
@@ -453,7 +453,7 @@ export default function PanelPage() {
                         </button>
                         <button 
                             onClick={() => setActiveTab('donations')} 
-                            className={`flex items-center space-x-2 font-bold text-xl transition-colors duration-300 ${
+                            className={`flex items-center space-x-2 font-bold text-xl transition-colors duration-300 cursor-pointer ${
                                 activeTab === 'donations' 
                                     ? "text-red-400" 
                                     : "text-white/60 hover:text-red-400"
