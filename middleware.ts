@@ -84,14 +84,13 @@ function verifyToken(token: string): { subject: string; isGm?: number } | null {
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const isAdminApiRoute = pathname.startsWith('/api/admin');
 
     // Check if it's a protected route
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
     const isProtectedApiRoute = protectedApiRoutes.some(route => pathname.startsWith(route));
 
-    if (isProtectedRoute || isProtectedApiRoute || isAdminApiRoute) {
-        const token = getTokenFromRequest(request, isProtectedApiRoute || isAdminApiRoute);
+    if (isProtectedRoute || isProtectedApiRoute) {
+        const token = getTokenFromRequest(request, isProtectedApiRoute);
         
         // Debug logging (can be removed in production)
         if (process.env.NODE_ENV === 'development') {
@@ -117,7 +116,7 @@ export async function middleware(request: NextRequest) {
         }
         
         if (!token) {
-            if (isProtectedApiRoute || isAdminApiRoute) {
+            if (isProtectedApiRoute) {
                 return NextResponse.json(
                     { message: 'Unauthorized' },
                     { status: 401 }
@@ -136,7 +135,7 @@ export async function middleware(request: NextRequest) {
             if (process.env.NODE_ENV === 'development') {
                 console.log(`[Middleware] Token verification failed for route: ${pathname}`);
             }
-            if (isProtectedApiRoute || isAdminApiRoute) {
+            if (isProtectedApiRoute) {
                 return NextResponse.json(
                     { message: 'Unauthorized' },
                     { status: 401 }
@@ -148,15 +147,8 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(loginUrl);
         }
 
-        if (isAdminApiRoute && Number(verified.isGm || 0) !== 10) {
-            return NextResponse.json(
-                { message: 'Forbidden' },
-                { status: 403 }
-            );
-        }
-
         // Add username to request headers for API routes (full user lookup happens in API route)
-        if (isProtectedApiRoute || isAdminApiRoute) {
+        if (isProtectedApiRoute) {
             const requestHeaders = new Headers(request.headers);
             requestHeaders.set('x-username', verified.subject);
             return NextResponse.next({

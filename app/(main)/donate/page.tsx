@@ -43,6 +43,11 @@ interface DonationPackage {
     CP: number;
 }
 
+interface CharacterOption {
+    CharID: number;
+    CharName: string;
+}
+
 const CURRENCIES = [
     { code: 'usd', label: 'USD', region: 'International' },
     { code: 'brl', label: 'BRL', region: 'Brazil (PIX)' },
@@ -53,6 +58,7 @@ const CURRENCIES = [
 export default function DonatePage() {
     const [donationData, setDonationData] = useState<any>(null);
     const [donationTiers, setDonationTiers] = useState<DonationTier[]>([]);
+    const [characters, setCharacters] = useState<CharacterOption[]>([]);
     const [loading, setLoading] = useState(true);
     const [currency, setCurrency] = useState<string>('usd');
 
@@ -77,6 +83,17 @@ export default function DonatePage() {
                     infoResponse = await API.get('/donation-info');
                 } catch (infoError) {
                     console.log('Could not fetch donation-info (might not be logged in):', infoError);
+                }
+
+                try {
+                    const charactersResponse = await API.get('/characters');
+                    if (charactersResponse.status === 200 && charactersResponse.data?.success) {
+                        setCharacters(charactersResponse.data.characters || []);
+                    } else {
+                        setCharacters([]);
+                    }
+                } catch {
+                    setCharacters([]);
                 }
                 
                 // Try to fetch donation packages data
@@ -288,6 +305,7 @@ export default function DonatePage() {
                                         totalDonated={donationData?.TotalDonated || 0}
                                         donationTiers={donationTiers}
                                         claimedTierIds={donationData?.claimedTierIds || []}
+                                        characters={characters}
                                         onClaimSuccess={() => {
                                             API.get('/donation-info').then((res) => {
                                                 if (res.data?.claimedTierIds !== undefined) {

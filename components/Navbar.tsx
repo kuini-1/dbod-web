@@ -12,6 +12,15 @@ export function Navbar() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [serverTimeMs, setServerTimeMs] = useState<number | null>(null);
+    const [hasProfileNotification, setHasProfileNotification] = useState(false);
+    const [hasDonateNotification, setHasDonateNotification] = useState(false);
+
+    const formatKstClock = (ms: number | null): string => {
+        if (!ms) return '--:--:--';
+        const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+        return new Date(ms + KST_OFFSET_MS).toISOString().slice(11, 19);
+    };
 
     const checkAuth = async () => {
         setIsLoading(true);
@@ -20,13 +29,55 @@ export function Navbar() {
             if (res.status === 201 || res.status === 200) {
                 setIsLoggedIn(true);
                 setUser(res.data);
+                const parsedServerTime = Date.parse(String(res.data?.serverTimeUtc ?? ''));
+                if (Number.isFinite(parsedServerTime)) {
+                    setServerTimeMs(parsedServerTime);
+                } else {
+                    setServerTimeMs(Date.now());
+                }
+
+                const [charactersRes, donationInfoRes, donationTiersRes] = await Promise.allSettled([
+                    API.get('/characters'),
+                    API.get('/donation-info'),
+                    API.get('/donation-tiers'),
+                ]);
+
+                const characters = charactersRes.status === 'fulfilled'
+                    ? (charactersRes.value.data?.characters || [])
+                    : [];
+                const hasUpgradeableTokens = characters.some((char: any) => Number(char?.CCBD_Token ?? 0) >= 5);
+
+                const donationInfo = donationInfoRes.status === 'fulfilled'
+                    ? donationInfoRes.value.data
+                    : null;
+                const tiers = donationTiersRes.status === 'fulfilled'
+                    ? (donationTiersRes.value.data?.tiers || [])
+                    : [];
+                const totalDonated = Number(donationInfo?.TotalDonated ?? 0);
+                const claimedTierIds: number[] = Array.isArray(donationInfo?.claimedTierIds)
+                    ? donationInfo.claimedTierIds.map((id: any) => Number(id))
+                    : [];
+                const hasClaimableTier = tiers.some((tier: any) => {
+                    const tierId = Number(tier?.id);
+                    const tierAmount = Number(tier?.amount ?? 0);
+                    return tierAmount <= totalDonated && !claimedTierIds.includes(tierId);
+                });
+
+                setHasProfileNotification(hasUpgradeableTokens);
+                setHasDonateNotification(hasClaimableTier);
             } else {
                 setIsLoggedIn(false);
                 setUser(null);
+                setServerTimeMs(null);
+                setHasProfileNotification(false);
+                setHasDonateNotification(false);
             }
         } catch (error) {
             setIsLoggedIn(false);
             setUser(null);
+            setServerTimeMs(null);
+            setHasProfileNotification(false);
+            setHasDonateNotification(false);
         } finally {
             setIsLoading(false);
         }
@@ -47,12 +98,23 @@ export function Navbar() {
         };
     }, [pathname]);
 
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        const timer = setInterval(() => {
+            setServerTimeMs((prev) => (prev ? prev + 1000 : prev));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [isLoggedIn]);
+
     const handleLogout = async () => {
         try {
             await API.get("/auth/logout");
             localStorage.removeItem('authToken');
             setIsLoggedIn(false);
             setUser(null);
+            setServerTimeMs(null);
+            setHasProfileNotification(false);
+            setHasDonateNotification(false);
             router.push('/');
         } catch (error) {
             console.error('Logout error:', error);
@@ -74,8 +136,11 @@ export function Navbar() {
                             <Link href="/news" className={`hover:text-red-400 transition-colors ${pathname === '/news' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {local.navItemNews}
                             </Link>
-                            <Link href="/donate" className={`hover:text-red-400 transition-colors ${pathname === '/donate' ? 'text-red-400' : 'text-stone-300'}`}>
-                                {local.navItemDonation}
+                            <Link href="/donate" className={`hover:text-red-400 transition-colors ${pathname === '/donate' ? 'text-red-400' : 'text-stone-300'} flex items-center gap-2`}>
+                                <span>{local.navItemDonation}</span>
+                                {isLoggedIn && hasDonateNotification ? (
+                                    <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                                ) : null}
                             </Link>
                             <Link href="/cashshop" className={`hover:text-red-400 transition-colors ${pathname === '/cashshop' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {local.navItemCashshop}
@@ -83,6 +148,11 @@ export function Navbar() {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
+                        {isLoggedIn ? (
+                            <span className="hidden lg:inline-flex text-xs font-mono text-red-200/90 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-md">
+                                KST (UTC+9) {formatKstClock(serverTimeMs)}
+                            </span>
+                        ) : null}
                         {isLoading ? (
                             // Skeleton loading state
                             <>
@@ -129,9 +199,12 @@ export function Navbar() {
                                         
                                         router.push('/panel');
                                     }}
-                                    className="text-stone-300 hover:text-red-400 transition-colors cursor-pointer"
+                                    className="text-stone-300 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-2"
                                 >
-                                    {local.navSubItemProfile}
+                                    <span>{local.navSubItemProfile}</span>
+                                    {hasProfileNotification ? (
+                                        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+                                    ) : null}
                                 </button>
                                 <button onClick={handleLogout} className="text-stone-300 hover:text-red-400 transition-colors cursor-pointer">
                                     {local.navSubItemLogout}

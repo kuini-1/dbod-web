@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAward, faCheck, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faAward, faCheck, faLock, faArrowUp } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
 import { API } from '@/lib/api/client';
 import { SuccessToast, WarningToast } from '@/lib/utils/toasts';
@@ -31,6 +31,7 @@ interface DonationTierCardsProps {
     totalDonated: number;
     donationTiers: DonationTier[];
     claimedTierIds?: number[];
+    characters?: Array<{ CharID: number; CharName: string }>;
     onClaimSuccess?: () => void;
 }
 
@@ -38,19 +39,26 @@ export default function DonationTierCards({
     totalDonated,
     donationTiers,
     claimedTierIds = [],
+    characters = [],
     onClaimSuccess
 }: DonationTierCardsProps) {
     const [claimingTierId, setClaimingTierId] = useState<number | null>(null);
+    const [selectedCharacterByTier, setSelectedCharacterByTier] = useState<Record<number, number>>({});
 
     // Use donation value (totalDonated) to check if tier is unlocked
     const isTierReached = (tierAmount: number) => totalDonated >= tierAmount;
     const isTierClaimed = (tierId: number) => claimedTierIds.includes(tierId);
 
     const handleClaim = async (tierId: number) => {
+        const characterId = selectedCharacterByTier[tierId];
+        if (!characterId) {
+            WarningToast.fire('Please select a character for CCBD Limit +1 before claiming.');
+            return;
+        }
         if (claimingTierId) return;
         setClaimingTierId(tierId);
         try {
-            const response = await API.post('/donation-tiers/claim', { tierId });
+            const response = await API.post('/donation-tiers/claim', { tierId, characterId });
             if (response.status === 200 && response.data?.success) {
                 SuccessToast.fire(response.data.message || 'Rewards claimed successfully!');
                 onClaimSuccess?.();
@@ -164,10 +172,25 @@ export default function DonationTierCards({
                         <div className="space-y-2">
                             <div className="text-xs text-white/60 uppercase tracking-wide mb-2">Rewards:</div>
                             <ul className="space-y-2">
+                                <li className="flex items-start text-sm text-white/90">
+                                    <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 border overflow-hidden ${
+                                        reached
+                                            ? 'bg-green-500/10 border-green-500/30'
+                                            : 'bg-stone-700/50 border-white/10'
+                                    }`}>
+                                        <FontAwesomeIcon
+                                            icon={faArrowUp}
+                                            className={`text-xs ${reached ? 'text-green-400' : 'text-white/60'}`}
+                                        />
+                                    </div>
+                                    <span className={`leading-relaxed ${reached ? '' : 'text-white/60'}`}>
+                                        CCBD Limit +1
+                                    </span>
+                                </li>
                                 {(tier.rewardItems && tier.rewardItems.length > 0)
                                     ? tier.rewardItems.map((reward, i) => (
                                         <li key={`reward-item-${tier.id}-${reward.tblidx}-${i}`} className="flex items-start text-sm text-white/90">
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 border overflow-hidden ${
+                                            <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 border overflow-hidden ${
                                                 reached
                                                     ? 'bg-green-500/10 border-green-500/30'
                                                     : 'bg-stone-700/50 border-white/10'
@@ -186,9 +209,12 @@ export default function DonationTierCards({
                                                         className={`text-xs ${reached ? 'text-green-400' : 'text-white/40'}`}
                                                     />
                                                 )}
+                                                <span className="absolute -bottom-1 -right-1 min-w-[1.1rem] h-[1.1rem] px-1 rounded-md bg-black/80 border border-white/20 text-[10px] leading-none font-bold text-white flex items-center justify-center">
+                                                    {reward.amount}
+                                                </span>
                                             </div>
                                             <span className={`leading-relaxed ${reached ? '' : 'text-white/60'}`}>
-                                                {reward.item?.name_en || `Item ${reward.tblidx}`} <span className="text-white/50">×</span>{reward.amount}
+                                                {reward.item?.name_en || `Item ${reward.tblidx}`}
                                             </span>
                                         </li>
                                     ))
@@ -201,9 +227,31 @@ export default function DonationTierCards({
                         {/* Claim Button - only when reached and not yet claimed */}
                         {reached && !claimed && (
                             <div className="mt-4 pt-4 border-t border-white/10">
+                                <label className="mb-3 block">
+                                    <span className="mb-1 block text-xs text-white/65">
+                                        Select character for CCBD Limit +1:
+                                    </span>
+                                    <select
+                                        value={selectedCharacterByTier[tier.id] ?? ''}
+                                        onChange={(e) =>
+                                            setSelectedCharacterByTier((prev) => ({
+                                                ...prev,
+                                                [tier.id]: Number(e.target.value)
+                                            }))
+                                        }
+                                        className="w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                                    >
+                                        <option value="" disabled>Select character</option>
+                                        {characters.map((char) => (
+                                            <option key={char.CharID} value={char.CharID}>
+                                                {char.CharName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
                                 <button
                                     onClick={() => handleClaim(tier.id)}
-                                    disabled={claimingTierId === tier.id}
+                                    disabled={claimingTierId === tier.id || !selectedCharacterByTier[tier.id]}
                                     className="w-full py-3 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
                                     {claimingTierId === tier.id ? 'Claiming...' : 'Claim Rewards'}

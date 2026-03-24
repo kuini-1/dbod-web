@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
             isGm: user.isGm,
             email: user.email,
             mallpoints: user.mallpoints,
-            donated: user.donated
+            donated: user.donated,
+            serverTimeUtc: new Date().toISOString()
         }, { status: 201 });
     } catch (error) {
         console.error('Private route error:', error);
