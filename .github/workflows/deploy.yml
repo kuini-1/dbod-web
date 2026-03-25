@@ -1,0 +1,74 @@
+name: Deploy Next.js (Standalone) to VPS
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PORT: ${{ secrets.PORT || '3001' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+        run: npm run build
+
+      - name: Prepare standalone assets
+        run: |
+          set -e
+          mkdir -p .next/standalone/public
+          cp -r public/* .next/standalone/public/
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/
+
+      - name: Ensure VPS deploy directory exists
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            mkdir -p /var/www/dbod-web
+
+      - name: Upload standalone to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: ".next/standalone/*"
+          target: "/var/www/dbod-web"
+          strip_components: 2
+
+      - name: Restart with PM2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          envs: PORT=${{ env.PORT }},NODE_ENV=production,NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }},SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }},NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }},STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }},STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }},CASHSHOP_TABLE_ID=${{ secrets.CASHSHOP_TABLE_ID }},DB_HOST=${{ secrets.DB_HOST }},DB_USER=${{ secrets.DB_USER }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_NAME=${{ secrets.DB_NAME }},DB_ACC_HOST=${{ secrets.DB_ACC_HOST }},DB_ACC_USER=${{ secrets.DB_ACC_USER }},DB_ACC_PASSWORD=${{ secrets.DB_ACC_PASSWORD }},DB_ACC_NAME=${{ secrets.DB_ACC_NAME }},DB_CHAR_HOST=${{ secrets.DB_CHAR_HOST }},DB_CHAR_USER=${{ secrets.DB_CHAR_USER }},DB_CHAR_PASSWORD=${{ secrets.DB_CHAR_PASSWORD }},DB_CHAR_NAME=${{ secrets.DB_CHAR_NAME }},JWT_TOKEN=${{ secrets.JWT_TOKEN }},WEB_BRIDGE_URL=${{ secrets.WEB_BRIDGE_URL }},WPS_FILES_PATH=${{ secrets.WPS_FILES_PATH }}
+          script: |
+            set -e
+            cd /var/www/dbod-web
+            pm2 reload dbod-web || pm2 start server.js --name dbod-web
+
