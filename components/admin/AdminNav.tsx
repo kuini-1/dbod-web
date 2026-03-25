@@ -9,6 +9,7 @@ const navItems = [
   { href: '/admin/buffs', label: 'Buffs' },
   { href: '/admin/items', label: 'Items' },
   { href: '/admin/cashshop', label: 'Cashshop' },
+  { href: '/admin/donation-tiers', label: 'Donation Tiers' },
   { href: '/admin/server', label: 'Server' },
   { href: '/admin/wps', label: 'WPS Scripts' }
 ];

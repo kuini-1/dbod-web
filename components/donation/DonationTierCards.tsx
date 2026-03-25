@@ -6,6 +6,13 @@ import { faAward, faCheck, faLock, faArrowUp } from '@fortawesome/free-solid-svg
 import Image from 'next/image';
 import { API } from '@/lib/api/client';
 import { SuccessToast, WarningToast } from '@/lib/utils/toasts';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface DonationTier {
     id: number;
@@ -231,23 +238,26 @@ export default function DonationTierCards({
                                     <span className="mb-1 block text-xs text-white/65">
                                         Select character for CCBD Limit +1:
                                     </span>
-                                    <select
-                                        value={selectedCharacterByTier[tier.id] ?? ''}
-                                        onChange={(e) =>
+                                    <Select
+                                        value={selectedCharacterByTier[tier.id] ? String(selectedCharacterByTier[tier.id]) : ''}
+                                        onValueChange={(value) =>
                                             setSelectedCharacterByTier((prev) => ({
                                                 ...prev,
-                                                [tier.id]: Number(e.target.value)
+                                                [tier.id]: Number(value)
                                             }))
                                         }
-                                        className="w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-red-500/40"
                                     >
-                                        <option value="" disabled>Select character</option>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select character" />
+                                        </SelectTrigger>
+                                        <SelectContent>
                                         {characters.map((char) => (
-                                            <option key={char.CharID} value={char.CharID}>
+                                            <SelectItem key={char.CharID} value={String(char.CharID)}>
                                                 {char.CharName}
-                                            </option>
+                                            </SelectItem>
                                         ))}
-                                    </select>
+                                        </SelectContent>
+                                    </Select>
                                 </label>
                                 <button
                                     onClick={() => handleClaim(tier.id)}

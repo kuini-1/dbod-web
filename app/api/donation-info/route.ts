@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
                 {
                     FirstTimeDonate: true,
                     TotalDonated: 0,
-                    claimedTierIds: []
+                    claimedTierIds: [],
+                    mallpoints: 0
                 },
                 { status: 200 }
             );
@@ -44,7 +45,8 @@ export async function GET(request: NextRequest) {
             {
                 FirstTimeDonate,
                 TotalDonated: totalDonated,
-                claimedTierIds
+                claimedTierIds,
+                mallpoints: Number((Account as any).mallpoints ?? 0)
             },
             { status: 200 }
         );
@@ -55,7 +57,8 @@ export async function GET(request: NextRequest) {
             {
                 FirstTimeDonate: true,
                 TotalDonated: 0,
-                claimedTierIds: []
+                claimedTierIds: [],
+                mallpoints: 0
             },
             { status: 200 }
         );

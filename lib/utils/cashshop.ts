@@ -1,6 +1,14 @@
 import cashshop_storage from '../models/cashshop_storage';
 import type { Transaction } from "sequelize";
 
+const MAX_SENDER_NAME_LENGTH = 16;
+
+function clampNullableString(value: string | null | undefined, maxLength: number): string | null {
+    const normalized = String(value ?? '').trim();
+    if (!normalized) return null;
+    return normalized.slice(0, maxLength);
+}
+
 /**
  * Add items to cashshop_storage for a user
  * @param accountId - The account ID of the user (both AccountID and Buyer will be set to this)
@@ -19,6 +27,7 @@ export async function addItemsToCashshop(
     }
 ): Promise<void> {
     const now = new Date();
+    const senderName = clampNullableString(options?.senderName, MAX_SENDER_NAME_LENGTH);
     
     for (const item of items) {
         // StackCount is TINYINT UNSIGNED, so max value is 255
@@ -40,7 +49,7 @@ export async function addItemsToCashshop(
                 StackCount: currentStackCount,
                 giftCharId: options?.giftCharId ?? null,
                 IsRead: 0,
-                SenderName: options?.senderName || null,
+                SenderName: senderName,
                 year: now.getFullYear(),
                 month: now.getMonth() + 1, // getMonth() returns 0-11
                 day: now.getDate(),

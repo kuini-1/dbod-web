@@ -59,107 +59,94 @@ export default function DonatePage() {
     const [donationData, setDonationData] = useState<any>(null);
     const [donationTiers, setDonationTiers] = useState<DonationTier[]>([]);
     const [characters, setCharacters] = useState<CharacterOption[]>([]);
-    const [loading, setLoading] = useState(true);
     const [currency, setCurrency] = useState<string>('usd');
+    const [packagesLoading, setPackagesLoading] = useState(true);
+    const [tiersLoading, setTiersLoading] = useState(true);
+    const [infoLoading, setInfoLoading] = useState(true);
+    const [charactersLoading, setCharactersLoading] = useState(true);
+
+    const defaultDonationData = {
+        DonationData: [
+            { id: 1, price: 5, CP: 50 },
+            { id: 2, price: 10, CP: 105 },
+            { id: 3, price: 25, CP: 275 },
+            { id: 4, price: 50, CP: 575 },
+            { id: 5, price: 80, CP: 960 },
+            { id: 6, price: 100, CP: 1250 }
+        ],
+        BonusCP: 0.25,
+        FirstTimeDonate: true,
+        claimedTierIds: [],
+        mallpoints: 0,
+        TotalDonated: 0
+    };
 
     useEffect(() => {
         (async () => {
             try {
-                let infoResponse: any = { data: {} };
-                let packagesResponse: any = { data: {} };
-                let tiersResponse: any = { data: { tiers: [] } };
-                
-                // Fetch donation tiers (public endpoint, no auth required)
-                try {
-                    tiersResponse = await API.get('/donation-tiers');
-                    setDonationTiers(tiersResponse.data.tiers || []);
-                } catch (tiersError) {
-                    console.error('Could not fetch donation tiers:', tiersError);
-                    setDonationTiers([]);
-                }
-                
-                // Try to fetch donation info (total donated and first time status)
-                try {
-                    infoResponse = await API.get('/donation-info');
-                } catch (infoError) {
-                    console.log('Could not fetch donation-info (might not be logged in):', infoError);
-                }
+                setDonationData(defaultDonationData);
 
-                try {
-                    const charactersResponse = await API.get('/characters');
-                    if (charactersResponse.status === 200 && charactersResponse.data?.success) {
-                        setCharacters(charactersResponse.data.characters || []);
-                    } else {
-                        setCharacters([]);
-                    }
-                } catch {
-                    setCharacters([]);
-                }
-                
-                // Try to fetch donation packages data
-                try {
-                    packagesResponse = await API.post("/donate", {});
-                } catch (packagesError) {
-                    console.log('Could not fetch donate packages (might not be logged in):', packagesError);
-                    // If not logged in, use default data
-                    packagesResponse = {
-                        data: {
-                            DonationData: [
-                                { id: 1, price: 5, CP: 50 },
-                                { id: 2, price: 10, CP: 105 },
-                                { id: 3, price: 25, CP: 275 },
-                                { id: 4, price: 50, CP: 575 },
-                                { id: 5, price: 80, CP: 960 },
-                                { id: 6, price: 100, CP: 1250 }
-                            ],
-                            BonusCP: 0.25,
-                            FirstTimeDonate: true
+                API.get('/donation-tiers')
+                    .then((tiersResponse) => {
+                        setDonationTiers(tiersResponse.data.tiers || []);
+                    })
+                    .catch((tiersError) => {
+                        console.error('Could not fetch donation tiers:', tiersError);
+                        setDonationTiers([]);
+                    })
+                    .finally(() => setTiersLoading(false));
+
+                API.get('/donation-info')
+                    .then((infoResponse) => {
+                        setDonationData((prev: any) => ({
+                            ...(prev || defaultDonationData),
+                            TotalDonated: infoResponse.data?.TotalDonated || 0,
+                            FirstTimeDonate: prev?.FirstTimeDonate ?? infoResponse.data?.FirstTimeDonate ?? true,
+                            claimedTierIds: infoResponse.data?.claimedTierIds || [],
+                            mallpoints: Number(infoResponse.data?.mallpoints ?? 0)
+                        }));
+                    })
+                    .catch((infoError) => {
+                        console.log('Could not fetch donation-info (might not be logged in):', infoError);
+                    })
+                    .finally(() => setInfoLoading(false));
+
+                API.get('/characters')
+                    .then((charactersResponse) => {
+                        if (charactersResponse.status === 200 && charactersResponse.data?.success) {
+                            setCharacters(charactersResponse.data.characters || []);
+                        } else {
+                            setCharacters([]);
                         }
-                    };
-                }
-                
-                // Combine the data
-                const combinedData = {
-                    ...packagesResponse.data,
-                    TotalDonated: infoResponse.data?.TotalDonated || 0,
-                    FirstTimeDonate: packagesResponse.data?.FirstTimeDonate ?? infoResponse.data?.FirstTimeDonate ?? true,
-                    BonusCP: packagesResponse.data?.BonusCP ?? 0.25,
-                    claimedTierIds: infoResponse.data?.claimedTierIds || []
-                };
-                
-                setDonationData(combinedData);
+                    })
+                    .catch(() => setCharacters([]))
+                    .finally(() => setCharactersLoading(false));
+
+                API.post("/donate", {})
+                    .then((packagesResponse) => {
+                        setDonationData((prev: any) => ({
+                            ...(prev || defaultDonationData),
+                            ...packagesResponse.data,
+                            FirstTimeDonate: packagesResponse.data?.FirstTimeDonate ?? prev?.FirstTimeDonate ?? true,
+                            BonusCP: packagesResponse.data?.BonusCP ?? prev?.BonusCP ?? 0.25
+                        }));
+                    })
+                    .catch((packagesError) => {
+                        console.log('Could not fetch donate packages (might not be logged in):', packagesError);
+                    })
+                    .finally(() => setPackagesLoading(false));
             } catch (error) {
                 console.error('Error fetching donation data:', error);
-                // Set default data on error
-                setDonationData({
-                    DonationData: [
-                        { id: 1, price: 5, CP: 50 },
-                        { id: 2, price: 10, CP: 105 },
-                        { id: 3, price: 25, CP: 275 },
-                        { id: 4, price: 50, CP: 575 },
-                        { id: 5, price: 80, CP: 960 },
-                        { id: 6, price: 100, CP: 1250 }
-                    ],
-                    BonusCP: 0.25,
-                    FirstTimeDonate: true,
-                    claimedTierIds: []
-                });
-            } finally {
-                setLoading(false);
+                setDonationData(defaultDonationData);
+                setDonationTiers([]);
+                setCharacters([]);
+                setPackagesLoading(false);
+                setTiersLoading(false);
+                setInfoLoading(false);
+                setCharactersLoading(false);
             }
         })();
     }, []);
-
-    if (loading) {
-        return (
-            <div className="text-white bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-500 mx-auto mb-4"></div>
-                    <div className="text-xl">Loading...</div>
-                </div>
-            </div>
-        );
-    }
 
     const DonationData: DonationPackage[] = donationData?.DonationData || [
         { id: 1, price: 5, CP: 50 },
@@ -224,6 +211,9 @@ export default function DonatePage() {
                         <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto font-light">
                             Get Cash Points instantly and unlock exclusive rewards
                         </p>
+                        <p className="mt-3 text-sm md:text-base text-red-200/90">
+                            Current Cash Points: <span className="font-semibold text-red-300">{Number(donationData?.mallpoints ?? 0).toLocaleString()}</span>
+                        </p>
 
                         {/* Currency selector for regional payment methods */}
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -261,63 +251,91 @@ export default function DonatePage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                     {/* Left Column: Package Grid */}
                     <div className="lg:col-span-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
-                            {DonationData.map((pkg, index) => {
-                                const isBestValue = pkg.id === bestValuePackage.id;
-                                const isRecommended = pkg.id === recommendedPackage.id && !isBestValue;
-                                
-                                // Calculate CP per dollar
-                                const eventBonusCP = donationData?.BonusCP && donationData.BonusCP > 0 
-                                    ? Math.round(pkg.CP * donationData.BonusCP) 
-                                    : 0;
-                                const firstTimeBonusCP = donationData?.FirstTimeDonate ? pkg.CP : 0;
-                                const totalCP = pkg.CP + eventBonusCP + firstTimeBonusCP;
-                                const cpPerDollar = totalCP / pkg.price;
+                        {packagesLoading ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
+                                {Array.from({ length: 6 }).map((_, idx) => (
+                                    <div key={`pkg-skeleton-${idx}`} className="rounded-2xl border-2 border-white/10 bg-stone-900/60 p-5 animate-pulse">
+                                        <div className="h-5 w-24 rounded bg-white/10 mb-4" />
+                                        <div className="h-8 w-32 rounded bg-white/10 mb-3" />
+                                        <div className="h-4 w-full rounded bg-white/10 mb-2" />
+                                        <div className="h-4 w-2/3 rounded bg-white/10 mb-6" />
+                                        <div className="h-10 w-full rounded-xl bg-white/10" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 md:gap-6">
+                                {DonationData.map((pkg, index) => {
+                                    const isBestValue = pkg.id === bestValuePackage.id;
+                                    const isRecommended = pkg.id === recommendedPackage.id && !isBestValue;
+                                    
+                                    // Calculate CP per dollar
+                                    const eventBonusCP = donationData?.BonusCP && donationData.BonusCP > 0 
+                                        ? Math.round(pkg.CP * donationData.BonusCP) 
+                                        : 0;
+                                    const firstTimeBonusCP = donationData?.FirstTimeDonate ? pkg.CP : 0;
+                                    const totalCP = pkg.CP + eventBonusCP + firstTimeBonusCP;
+                                    const cpPerDollar = totalCP / pkg.price;
 
-                                return (
-                                    <PackageCard
-                                        key={pkg.id}
-                                        id={pkg.id}
-                                        price={pkg.price}
-                                        baseCP={pkg.CP}
-                                        bonusCP={donationData?.BonusCP}
-                                        firstTime={donationData?.FirstTimeDonate}
-                                        cpPerDollar={cpPerDollar}
-                                        isBestValue={isBestValue}
-                                        isRecommended={isRecommended}
-                                        index={index}
-                                        currency={currency}
-                                    />
-                                );
-                            })}
-                        </div>
+                                    return (
+                                        <PackageCard
+                                            key={pkg.id}
+                                            id={pkg.id}
+                                            price={pkg.price}
+                                            baseCP={pkg.CP}
+                                            bonusCP={donationData?.BonusCP}
+                                            firstTime={donationData?.FirstTimeDonate}
+                                            cpPerDollar={cpPerDollar}
+                                            isBestValue={isBestValue}
+                                            isRecommended={isRecommended}
+                                            index={index}
+                                            currency={currency}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Donation Tier Cards (Sticky) */}
-                    {donationTiers.length > 0 && (
+                    {(tiersLoading || donationTiers.length > 0) && (
                         <div className="lg:col-span-1">
                             <div className="sticky top-24">
                                 <div className="bg-gradient-to-br from-stone-800/95 via-stone-850/95 to-stone-900/95 backdrop-blur-md rounded-2xl p-5 md:p-6 border-2 border-white/10 shadow-2xl">
                                     <h2 className="text-xl md:text-2xl font-bold text-center mb-6 bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
                                         {local.donationTiers || 'Donation Tiers'}
                                     </h2>
-                                    <DonationTierCards 
-                                        totalDonated={donationData?.TotalDonated || 0}
-                                        donationTiers={donationTiers}
-                                        claimedTierIds={donationData?.claimedTierIds || []}
-                                        characters={characters}
-                                        onClaimSuccess={() => {
-                                            API.get('/donation-info').then((res) => {
-                                                if (res.data?.claimedTierIds !== undefined) {
-                                                    setDonationData((prev: any) => ({
-                                                        ...prev,
-                                                        TotalDonated: res.data.TotalDonated,
-                                                        claimedTierIds: res.data.claimedTierIds
-                                                    }));
-                                                }
-                                            });
-                                        }}
-                                    />
+                                    {tiersLoading ? (
+                                        <div className="space-y-4">
+                                            {Array.from({ length: 3 }).map((_, idx) => (
+                                                <div key={`tier-skeleton-${idx}`} className="rounded-xl border-2 border-white/10 bg-stone-900/50 p-4 animate-pulse">
+                                                    <div className="h-5 w-32 rounded bg-white/10 mb-3" />
+                                                    <div className="h-4 w-24 rounded bg-white/10 mb-4" />
+                                                    <div className="h-2 w-full rounded bg-white/10 mb-3" />
+                                                    <div className="h-4 w-2/3 rounded bg-white/10" />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <DonationTierCards 
+                                            totalDonated={donationData?.TotalDonated || 0}
+                                            donationTiers={donationTiers}
+                                            claimedTierIds={donationData?.claimedTierIds || []}
+                                            characters={characters}
+                                            onClaimSuccess={() => {
+                                                API.get('/donation-info').then((res) => {
+                                                    if (res.data?.claimedTierIds !== undefined) {
+                                                        setDonationData((prev: any) => ({
+                                                            ...prev,
+                                                            TotalDonated: res.data.TotalDonated,
+                                                            claimedTierIds: res.data.claimedTierIds,
+                                                            mallpoints: Number(res.data.mallpoints ?? prev?.mallpoints ?? 0)
+                                                        }));
+                                                    }
+                                                });
+                                            }}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </div>
