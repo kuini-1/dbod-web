@@ -46,7 +46,31 @@ interface VipRewardAttributes {
     Vip: number;
 }
 
-export interface AccountsInput extends Optional<AccountsAttributes, "AccountID"> {}
+// Many columns have DB defaults and/or allow NULL, so allow them to be omitted on create.
+export interface AccountsInput extends Optional<
+    AccountsAttributes,
+    | "AccountID"
+    | "acc_status"
+    | "mallpoints"
+    | "reg_date"
+    | "ban"
+    | "last_login"
+    | "reg_ip"
+    | "admin"
+    | "isGm"
+    | "lastServerFarmId"
+    | "founder"
+    | "founder_recv"
+    | "last_ip"
+    | "del_char_pw"
+    | "PremiumSlots"
+    | "EventCoins"
+    | "WaguCoins"
+    | "web_ip"
+    | "vip"
+    | "vip_exp"
+    | "donated"
+> {}
 export interface EventRewardInput extends Optional<EventRewardAttributes, "CharID" | "CharName"> {}
 export interface VipRewardInput extends VipRewardAttributes {}
 
