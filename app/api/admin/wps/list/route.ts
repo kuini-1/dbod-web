@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
+import type { Dirent } from 'fs';
 import path from 'path';
 import { getWpsRoot, ensureWpsRootExists } from '../lib';
 
@@ -20,7 +21,7 @@ export async function GET() {
     );
   }
 
-  let entries: fs.Dirent[];
+  let entries: Dirent[];
   try {
     entries = await fs.readdir(root, { withFileTypes: true });
   } catch (err: any) {
