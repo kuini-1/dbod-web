@@ -3,7 +3,6 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -29,30 +28,6 @@ export interface FeatureGridProps {
   buttonHref: string;
   className?: string;
 }
-
-// Animation variants for Framer Motion
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 100,
-      damping: 12,
-    },
-  },
-};
 
 /**
  * A responsive grid component to showcase features or categories with animations.
@@ -98,20 +73,10 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(
         </div>
 
         {/* Grid Container */}
-        <motion.div
-          className="rounded-xl border bg-card text-card-foreground p-6 md:p-8"
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={containerVariants}
-        >
+        <div className="rounded-xl border bg-card text-card-foreground p-6 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
             {categories.map((category, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="flex flex-col items-start"
-              >
+              <div key={index} className="flex flex-col items-start">
                 <div className="mb-3 text-amber-400 [&_svg]:drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]">{category.icon}</div>
                 <h3 className="font-semibold text-foreground mb-2">
                   {category.title}
@@ -132,23 +97,17 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(
                     </li>
                   ))}
                 </ul>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           {/* Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.5 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="mt-12"
-          >
+          <div className="mt-12">
             <Button size="lg" className="px-6" asChild>
               <Link href={buttonHref}>{buttonText}</Link>
             </Button>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
     );
   },
