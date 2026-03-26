@@ -6,7 +6,7 @@ import { JWT_TOKEN } from './lib/auth/jwt';
 // Protected routes that require authentication
 // Note: /panel handles its own auth check in the component
 const protectedRoutes = [
-    '/daily-login',
+    '/daily-login', 
     '/raffle'
 ];
 
