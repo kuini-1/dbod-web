@@ -62,7 +62,9 @@ const Hero7 = ({
             {description}
           </p>
         </div>
-        <Button size="lg" className="mt-10" render={<a href={button.url} />} nativeButton={false}>{button.text}</Button>
+        <Button size="lg" className="mt-10" asChild>
+          <a href={button.url}>{button.text}</a>
+        </Button>
         <div className="mx-auto mt-10 flex w-fit flex-col items-center gap-4 sm:flex-row">
           <span className="mx-4 inline-flex items-center -space-x-4">
             {reviews.avatars.map((avatar, index) => (
