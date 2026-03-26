@@ -88,6 +88,7 @@ server_status.init({
         type: DataTypes.TINYINT,
     }
   }, {
+    tableName: 'server_status',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc,

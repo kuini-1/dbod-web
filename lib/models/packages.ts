@@ -50,6 +50,7 @@ packages.init({
         allowNull: true
     }
 }, {
+    tableName: 'packages',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc,

@@ -430,6 +430,7 @@ characters.init(
         CCBD_Last_Refresh: { type: DataTypes.BIGINT, allowNull: true, defaultValue: 0 },
     },
     {
+        tableName: "characters",
         freezeTableName: true,
         timestamps: false,
         sequelize: dbod_char,

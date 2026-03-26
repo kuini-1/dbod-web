@@ -44,6 +44,7 @@ popup_banner_items.init({
         defaultValue: 0,
     },
 }, {
+    tableName: 'popup_banner_items',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc,

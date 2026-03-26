@@ -56,6 +56,7 @@ donations.init({
         allowNull: true
     }
 }, {
+    tableName: 'donations',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc,

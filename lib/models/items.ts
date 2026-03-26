@@ -38,6 +38,7 @@ items.init({
         defaultValue: null,
     },
 }, {
+    tableName: 'items',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc,

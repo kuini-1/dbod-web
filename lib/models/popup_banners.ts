@@ -55,6 +55,7 @@ popup_banners.init({
         allowNull: true
     }
 }, {
+    tableName: 'popup_banners',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc,

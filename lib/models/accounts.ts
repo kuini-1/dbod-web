@@ -271,6 +271,7 @@ accounts.init(
         },
     },
     {
+        tableName: "accounts",
         freezeTableName: true,
         timestamps: false,
         sequelize: dbod_acc,
@@ -291,6 +292,7 @@ vip_reward.init(
         },
     },
     {
+        tableName: "vip_reward",
         freezeTableName: true,
         timestamps: false,
         sequelize: dbod_acc,

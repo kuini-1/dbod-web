@@ -128,6 +128,7 @@ cashshop_storage.init({
         defaultValue: 0,
     },
 }, {
+    tableName: 'cashshop_storage',
     freezeTableName: true,
     timestamps: false,
     sequelize: dbod_acc
