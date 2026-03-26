@@ -14,6 +14,7 @@ import cashshop_storage from '../models/cashshop_storage';
 import { server_status } from '../models/server_status';
 import { characters } from '../models/characters';
 import { Raffle, RaffleEntry, RaffleWinner } from '../models/raffle';
+import type { ModelStatic, Model } from 'sequelize';
 
 const SEED_PACKAGES = [
     { price: 5, cashPoints: 50, isForDonation: 1, sortOrder: 1, name: '$5 Package' },
@@ -24,40 +25,67 @@ const SEED_PACKAGES = [
     { price: 100, cashPoints: 1250, isForDonation: 1, sortOrder: 6, name: '$100 Package' },
 ];
 
-async function tryRemoveColumn(table: string, column: string, label: string) {
-    const qi = dbod_acc.getQueryInterface();
+async function syncModelAdditiveOnly(model: ModelStatic<Model<any, any>>) {
+    const sequelize = model.sequelize ?? dbod_acc;
+    const qi = sequelize.getQueryInterface();
+    const tableName = model.getTableName() as string;
+
+    let existingColumns: Record<string, unknown> | null = null;
     try {
-        await qi.removeColumn(table, column);
-        console.log(`Dropped deprecated ${label}`);
+        existingColumns = await qi.describeTable(tableName);
     } catch {
-        // Column may not exist
+        existingColumns = null;
+    }
+
+    if (!existingColumns) {
+        await model.sync();
+        console.log(`${tableName} table created`);
+        return;
+    }
+
+    const rawAttributes = model.getAttributes();
+    for (const [columnName, attribute] of Object.entries(rawAttributes)) {
+        if (Object.prototype.hasOwnProperty.call(existingColumns, columnName)) {
+            continue;
+        }
+
+        // Additive-only sync: never mutate existing columns, keys, or constraints.
+        // For new columns, avoid forcing PK/auto-increment/index creation during runtime.
+        const safeAttribute: Record<string, unknown> = {
+            ...(attribute as unknown as Record<string, unknown>),
+            primaryKey: false,
+            unique: false,
+            autoIncrement: false,
+        };
+
+        await qi.addColumn(tableName, columnName, safeAttribute as any);
+        console.log(`Added missing column ${tableName}.${columnName}`);
     }
 }
 
 /**
- * Runs migrations and sequelize.sync({ alter: true }) for all web DB models once at server startup.
+ * Additive-only sync for app tables:
+ * - creates missing tables
+ * - adds missing columns
+ * - never removes or alters existing columns/data
  */
 export async function syncAll() {
-    await tryRemoveColumn('donation_tiers', 'rewards', 'donation_tiers.rewards column');
-    await donation_tiers.sync({ alter: true });
+    await syncModelAdditiveOnly(donation_tiers);
     console.log('Donation tiers table synced successfully');
 
     await Promise.all([
-        donation_tier_items.sync({ alter: true }),
-        donation_tier_claims.sync({ alter: true }),
+        syncModelAdditiveOnly(donation_tier_items),
+        syncModelAdditiveOnly(donation_tier_claims),
     ]);
     console.log('Donation tier items and claims tables synced');
 
-    for (const col of ['content_en', 'content_kr', 'imageUrl']) {
-        await tryRemoveColumn('popup_banners', col, `popup_banners.${col} column`);
-    }
-    await popup_banners.sync({ alter: true });
+    await syncModelAdditiveOnly(popup_banners);
     console.log('Popup banners table created or updated successfully');
 
-    await popup_banner_items.sync({ alter: true });
+    await syncModelAdditiveOnly(popup_banner_items);
     console.log('Popup banner items table created or updated successfully');
 
-    await packages.sync({ alter: true });
+    await syncModelAdditiveOnly(packages);
     const packageCount = await packages.count();
     if (packageCount === 0) {
         await packages.bulkCreate(SEED_PACKAGES as any);
@@ -67,28 +95,28 @@ export async function syncAll() {
     }
 
     await Promise.all([
-        accounts.sync({ alter: true }),
-        event_reward.sync({ alter: true }),
-        vip_reward.sync({ alter: true }),
+        syncModelAdditiveOnly(accounts),
+        syncModelAdditiveOnly(event_reward),
+        syncModelAdditiveOnly(vip_reward),
     ]);
     console.log('Account-related tables created or updated successfully');
 
     await Promise.all([
-        items.sync({ alter: true }),
-        donations.sync({ alter: true }),
-        daily_rewards.sync({ alter: true }),
-        daily_reward_claims.sync({ alter: true }),
-        daily_logins.sync({ alter: true }),
-        cashshop_storage.sync({ alter: true }),
-        server_status.sync({ alter: true }),
+        syncModelAdditiveOnly(items),
+        syncModelAdditiveOnly(donations),
+        syncModelAdditiveOnly(daily_rewards),
+        syncModelAdditiveOnly(daily_reward_claims),
+        syncModelAdditiveOnly(daily_logins),
+        syncModelAdditiveOnly(cashshop_storage),
+        syncModelAdditiveOnly(server_status),
     ]);
     console.log('Items, donations, daily rewards, daily logins, cashshop storage, server status synced');
 
-    await Raffle.sync({ alter: true });
-    await RaffleEntry.sync({ alter: true });
-    await RaffleWinner.sync({ alter: true });
+    await syncModelAdditiveOnly(Raffle);
+    await syncModelAdditiveOnly(RaffleEntry);
+    await syncModelAdditiveOnly(RaffleWinner);
     console.log('Raffle tables synced');
 
-    await characters.sync({ alter: true });
+    await syncModelAdditiveOnly(characters);
     console.log('Characters table (dbo_char) synced');
 }
