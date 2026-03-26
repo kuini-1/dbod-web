@@ -1,11 +1,21 @@
 import { Sequelize } from "sequelize";
 
+const accDbName = process.env.DB_ACC_NAME || 'dbo_acc';
+const accDbUser = process.env.DB_ACC_USER || 'root';
+const accDbPassword = process.env.DB_ACC_PASSWORD || '123456';
+const accDbHost = process.env.DB_ACC_HOST || 'localhost';
+
+const charDbName = process.env.DB_CHAR_NAME || 'dbo_char';
+const charDbUser = process.env.DB_CHAR_USER || 'root';
+const charDbPassword = process.env.DB_CHAR_PASSWORD || '123456';
+const charDbHost = process.env.DB_CHAR_HOST || 'localhost';
+
 export const dbod_acc = new Sequelize(
-    process.env.DB_ACC_NAME || 'dbo_acc',
-    process.env.DB_ACC_USER || 'root',
-    process.env.DB_ACC_PASSWORD || '123456',
+    accDbName,
+    accDbUser,
+    accDbPassword,
     {
-        host: process.env.DB_ACC_HOST || 'localhost',
+        host: accDbHost,
         logging: false,
         dialect: 'mysql',
         pool: {
@@ -18,11 +28,11 @@ export const dbod_acc = new Sequelize(
 );
 
 export const dbod_char = new Sequelize(
-    process.env.DB_CHAR_NAME || 'dbo_char',
-    process.env.DB_CHAR_USER || 'root',
-    process.env.DB_CHAR_PASSWORD || '123456',
+    charDbName,
+    charDbUser,
+    charDbPassword,
     {
-        host: process.env.DB_CHAR_HOST || 'localhost',
+        host: charDbHost,
         logging: false,
         dialect: 'mysql',
         pool: {

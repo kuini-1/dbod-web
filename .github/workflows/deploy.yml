@@ -81,10 +81,6 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           CASHSHOP_TABLE_ID: ${{ secrets.CASHSHOP_TABLE_ID }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_NAME: ${{ secrets.DB_NAME }}
           DB_ACC_HOST: ${{ secrets.DB_ACC_HOST }}
           DB_ACC_USER: ${{ secrets.DB_ACC_USER }}
           DB_ACC_PASSWORD: ${{ secrets.DB_ACC_PASSWORD }}
