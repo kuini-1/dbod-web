@@ -5,8 +5,8 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
-  // Externalize Sequelize and related packages to prevent bundling issues
-  serverExternalPackages: ['sequelize', 'mysql2', 'pg-hstore'],
+  // Keep Sequelize externalized, but allow mysql2 to be traced into standalone output.
+  serverExternalPackages: ['sequelize', 'pg-hstore'],
   // Emit the minimal server bundle for easy deployment
   output: 'standalone',
 };
