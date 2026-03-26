@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         if (!response.ok) {
             return NextResponse.json({ error: 'Bridge request failed' }, { status: 502 });
         }
-
+ 
         const data = await response.json();
         return NextResponse.json(data, { status: 200 });
     } catch (error) {
