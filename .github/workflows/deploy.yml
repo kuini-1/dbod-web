@@ -80,6 +80,9 @@ jobs:
           script: |
             set -e
             cd /var/www/dbod-web
+            if [ ! -d node_modules/mysql2 ]; then
+              npm install --omit=dev --no-fund --no-audit mysql2 sequelize pg-hstore
+            fi
             export PORT="${PORT:-3001}"
             pm2 describe dbod-web >/dev/null 2>&1 \
               && pm2 reload dbod-web --update-env \
