@@ -81,7 +81,7 @@ jobs:
             set -e
             cd /var/www/dbod-web
             if [ ! -d node_modules/mysql2 ]; then
-              npm install --omit=dev --no-fund --no-audit mysql2 sequelize pg-hstore
+              npm install --omit=dev --no-fund --no-audit --legacy-peer-deps mysql2 sequelize pg-hstore
             fi
             export PORT="${PORT:-3001}"
             pm2 describe dbod-web >/dev/null 2>&1 \
