@@ -60,10 +60,6 @@ export default function AdminPlayersPage() {
 
   const [resetSkillCooldownCharId, setResetSkillCooldownCharId] = useState('');
 
-  useEffect(() => {
-    loadOnlinePlayers();
-  }, []);
-
   const filteredPlayers = useMemo(() => {
     const text = filterText.trim().toLowerCase();
     const channelFilter = filterChannel.trim();
@@ -96,6 +92,12 @@ export default function AdminPlayersPage() {
       setActionResult(err.message || 'Online players fetch failed');
     }
   }
+
+  useEffect(() => {
+    loadOnlinePlayers();
+    // Intentionally run once on initial mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function setResult(label: string, result: any) {
     setActionResult(`${label}: result=${result.resultCode} affected=${result.affectedCount || 0}`);

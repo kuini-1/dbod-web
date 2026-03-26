@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -86,9 +87,11 @@ export const FeatureGrid = React.forwardRef<HTMLDivElement, FeatureGridProps>(
             </p>
           </div>
           <div className="flex-shrink-0">
-            <img
+            <Image
               src={illustrationSrc}
               alt={illustrationAlt}
+              width={192}
+              height={120}
               className="w-48 h-auto"
             />
           </div>

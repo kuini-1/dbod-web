@@ -183,8 +183,8 @@ void main(){gl_Position=position;}`;
       
       gl.uniform2f((program as any).resolution, this.canvas.width, this.canvas.height);
       gl.uniform1f((program as any).time, now * 1e-3);
-      gl.uniform2f((program as any).move, ...this.mouseMove);
-      gl.uniform2f((program as any).touch, ...this.mouseCoords);
+      gl.uniform2f((program as any).move, this.mouseMove[0] ?? 0, this.mouseMove[1] ?? 0);
+      gl.uniform2f((program as any).touch, this.mouseCoords[0] ?? 0, this.mouseCoords[1] ?? 0);
       gl.uniform1i((program as any).pointerCount, this.nbrOfPointers);
       gl.uniform2fv((program as any).pointers, this.pointerCoords);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -317,6 +317,8 @@ void main(){gl_Position=position;}`;
         rendererRef.current.reset();
       }
     };
+    // This effect intentionally initializes once because it wires imperative WebGL listeners/resources.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return canvasRef;

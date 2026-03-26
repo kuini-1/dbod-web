@@ -47,6 +47,8 @@ export default function EquipmentStatDetailModal({
 
     useEffect(() => {
         if (isOpen) {
+            // Reset preview state whenever modal opens or selected row changes.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setRerollNonce(0);
         }
     }, [isOpen, row?.tblidx]);

@@ -107,6 +107,7 @@ export default function AdminServerPage() {
 
   useEffect(() => {
     loadBonusState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

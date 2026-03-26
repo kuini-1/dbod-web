@@ -12,11 +12,8 @@ interface UrgencyIndicatorProps {
 
 export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: UrgencyIndicatorProps) {
     const [timeLeft, setTimeLeft] = useState<string>('');
-    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
-        
         if (eventEndDate) {
             const updateTimeLeft = () => {
                 const now = new Date();
@@ -47,8 +44,6 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
             return () => clearInterval(interval);
         }
     }, [eventEndDate]);
-
-    if (!mounted) return null;
 
     const hasActiveBonuses = (bonusCP && bonusCP > 0) || firstTime;
 
@@ -108,7 +103,7 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
                 {hasActiveBonuses && (
                     <div className="text-center md:text-left">
                         <div className="text-sm font-bold text-white/90">
-                            Don't miss out on these bonuses!
+                            Don&apos;t miss out on these bonuses!
                         </div>
                         <div className="text-xs text-white/60 mt-1">
                             {firstTime && bonusCP && bonusCP > 0 

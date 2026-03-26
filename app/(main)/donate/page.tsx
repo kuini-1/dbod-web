@@ -48,6 +48,22 @@ interface CharacterOption {
     CharName: string;
 }
 
+const DEFAULT_DONATION_DATA = {
+    DonationData: [
+        { id: 1, price: 5, CP: 50 },
+        { id: 2, price: 10, CP: 105 },
+        { id: 3, price: 25, CP: 275 },
+        { id: 4, price: 50, CP: 575 },
+        { id: 5, price: 80, CP: 960 },
+        { id: 6, price: 100, CP: 1250 }
+    ],
+    BonusCP: 0.25,
+    FirstTimeDonate: true,
+    claimedTierIds: [],
+    mallpoints: 0,
+    TotalDonated: 0
+};
+
 const CURRENCIES = [
     { code: 'usd', label: 'USD', region: 'International' },
     { code: 'brl', label: 'BRL', region: 'Brazil (PIX)' },
@@ -65,26 +81,10 @@ export default function DonatePage() {
     const [infoLoading, setInfoLoading] = useState(true);
     const [charactersLoading, setCharactersLoading] = useState(true);
 
-    const defaultDonationData = {
-        DonationData: [
-            { id: 1, price: 5, CP: 50 },
-            { id: 2, price: 10, CP: 105 },
-            { id: 3, price: 25, CP: 275 },
-            { id: 4, price: 50, CP: 575 },
-            { id: 5, price: 80, CP: 960 },
-            { id: 6, price: 100, CP: 1250 }
-        ],
-        BonusCP: 0.25,
-        FirstTimeDonate: true,
-        claimedTierIds: [],
-        mallpoints: 0,
-        TotalDonated: 0
-    };
-
     useEffect(() => {
         (async () => {
             try {
-                setDonationData(defaultDonationData);
+                setDonationData(DEFAULT_DONATION_DATA);
 
                 API.get('/donation-tiers')
                     .then((tiersResponse) => {
@@ -99,7 +99,7 @@ export default function DonatePage() {
                 API.get('/donation-info')
                     .then((infoResponse) => {
                         setDonationData((prev: any) => ({
-                            ...(prev || defaultDonationData),
+                            ...(prev || DEFAULT_DONATION_DATA),
                             TotalDonated: infoResponse.data?.TotalDonated || 0,
                             FirstTimeDonate: prev?.FirstTimeDonate ?? infoResponse.data?.FirstTimeDonate ?? true,
                             claimedTierIds: infoResponse.data?.claimedTierIds || [],
@@ -125,7 +125,7 @@ export default function DonatePage() {
                 API.post("/donate", {})
                     .then((packagesResponse) => {
                         setDonationData((prev: any) => ({
-                            ...(prev || defaultDonationData),
+                            ...(prev || DEFAULT_DONATION_DATA),
                             ...packagesResponse.data,
                             FirstTimeDonate: packagesResponse.data?.FirstTimeDonate ?? prev?.FirstTimeDonate ?? true,
                             BonusCP: packagesResponse.data?.BonusCP ?? prev?.BonusCP ?? 0.25
@@ -137,7 +137,7 @@ export default function DonatePage() {
                     .finally(() => setPackagesLoading(false));
             } catch (error) {
                 console.error('Error fetching donation data:', error);
-                setDonationData(defaultDonationData);
+                setDonationData(DEFAULT_DONATION_DATA);
                 setDonationTiers([]);
                 setCharacters([]);
                 setPackagesLoading(false);

@@ -52,6 +52,7 @@ export default function LoginPage() {
             // The server also sets it, but this ensures it's available client-side
             // Don't URL encode - set raw token (middleware handles decoding)
             const cookieString = `token=${token}; path=/; max-age=${24 * 60 * 60}; SameSite=Lax`;
+            // eslint-disable-next-line react-hooks/immutability
             document.cookie = cookieString;
             
             // Verify cookie was set

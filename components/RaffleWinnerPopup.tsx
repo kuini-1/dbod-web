@@ -11,33 +11,22 @@ interface RaffleWinnerPopupProps {
 }
 
 export default function RaffleWinnerPopup({ winner }: RaffleWinnerPopupProps) {
-    const [show, setShow] = useState(false);
-    const [lastShownWinner, setLastShownWinner] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            setLastShownWinner(localStorage.getItem('lastShownRaffleWinner'));
-        }
-    }, []);
-
-    useEffect(() => {
-        if (winner && winner.timestamp !== lastShownWinner) {
-            setShow(true);
-            setLastShownWinner(winner.timestamp);
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('lastShownRaffleWinner', winner.timestamp);
-            }
-        }
-    }, [winner, lastShownWinner]);
+    const [lastShownWinner, setLastShownWinner] = useState<string | null>(() => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem('lastShownRaffleWinner');
+    });
 
     const handleClose = () => {
-        setShow(false);
         if (winner && typeof window !== 'undefined') {
             localStorage.setItem('lastShownRaffleWinner', winner.timestamp);
         }
+        if (winner) {
+            setLastShownWinner(winner.timestamp);
+        }
     };
 
-    if (!winner || !show) return null;
+    const show = !!winner && winner.timestamp !== lastShownWinner;
+    if (!show || !winner) return null;
 
     return (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-lg">
