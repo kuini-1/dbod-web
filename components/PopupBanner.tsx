@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGem, faTimes, faGift, faClock, faBox, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/navigation';
 import CharacterSelect from './CharacterSelect';
+import { useLocale } from './LocaleProvider';
 
 interface PopupBanner {
     id: number;
@@ -47,6 +48,8 @@ interface BannerItem {
 }
 
 export default function PopupBanner() {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [popups, setPopups] = useState<PopupBanner[]>([]);
     const [currentPopupIndex, setCurrentPopupIndex] = useState(0);
     const [dontShowAgain, setDontShowAgain] = useState(false);
@@ -93,7 +96,7 @@ export default function PopupBanner() {
                             }
                           }
                         `,
-                        variables: { lang: 'en' },
+                        variables: { lang: locale },
                     }),
                 });
 
@@ -126,7 +129,7 @@ export default function PopupBanner() {
         };
 
         fetchPopups();
-    }, []);
+    }, [locale]);
 
     const handleClose = () => {
         setIsClosing(true);
@@ -150,14 +153,14 @@ export default function PopupBanner() {
 
     const handlePurchase = async () => {
         if (!selectedGameCharacter) {
-            alert('Please select a character to receive the items.');
+            alert(tx('Please select a character to receive the items.', '아이템을 받을 캐릭터를 선택하세요.'));
             return;
         }
 
         const currentPopup = popups[currentPopupIndex];
 
         if (!currentPopup.packageId) {
-            alert('This banner is not configured for purchase. Please contact support.');
+            alert(tx('This banner is not configured for purchase. Please contact support.', '이 배너는 구매 설정이 되어 있지 않습니다. 관리자에게 문의하세요.'));
             return;
         }
 
@@ -198,7 +201,7 @@ export default function PopupBanner() {
                     return;
                 }
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Failed to create checkout session');
+                throw new Error(errorData.detail || tx('Failed to create checkout session', '체크아웃 세션 생성에 실패했습니다'));
             }
 
             const data = await response.json();
@@ -207,11 +210,11 @@ export default function PopupBanner() {
                 // Redirect to Stripe Checkout
                 window.location.href = data.url;
             } else {
-                throw new Error('No checkout URL received');
+                throw new Error(tx('No checkout URL received', '체크아웃 URL을 받지 못했습니다'));
             }
         } catch (error) {
             console.error('Error creating checkout session:', error);
-            alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
+            alert(error instanceof Error ? error.message : tx('Failed to start checkout. Please try again.', '결제를 시작하지 못했습니다. 다시 시도해주세요.'));
             setIsPurchasing(false);
         }
     };
@@ -276,7 +279,7 @@ export default function PopupBanner() {
                     <button
                         onClick={handleClose}
                         className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 rounded-lg transition-all duration-200 hover:scale-110 border border-slate-600/50 cursor-pointer"
-                        aria-label="Close"
+                        aria-label={tx('Close', '닫기')}
                     >
                         <FontAwesomeIcon icon={faTimes} className="text-slate-300 text-lg" />
                     </button>
@@ -358,7 +361,7 @@ export default function PopupBanner() {
                             <div className="flex-1 p-6 overflow-y-auto">
                                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                                     <FontAwesomeIcon icon={faGift} className="text-indigo-400" />
-                                    Package Contents
+                                    {tx('Package Contents', '패키지 구성품')}
                                 </h3>
                                 
                                 <div className="space-y-3">
@@ -370,7 +373,7 @@ export default function PopupBanner() {
                                                     <FontAwesomeIcon icon={faGem} className="text-indigo-300 text-xl" />
                                                 </div>
                                                 <div>
-                                                    <div className="text-white font-medium">Cash Points</div>
+                                                    <div className="text-white font-medium">{tx('Cash Points', '캐시 포인트')}</div>
                                                 </div>
                                             </div>
                                             <div className="text-indigo-300 font-semibold">
@@ -424,22 +427,22 @@ export default function PopupBanner() {
                                     {/* Character Selection */}
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-2">
-                                            Select Character
+                                            {tx('Select Character', '캐릭터 선택')}
                                         </label>
                                         <CharacterSelect
                                             onSelect={(char) => setSelectedGameCharacter(char)}
                                             selectedCharacter={selectedGameCharacter || undefined}
-                                            title="Choose character"
+                                            title={tx('Choose character', '캐릭터 선택')}
                                         />
                                     </div>
 
                                     {/* Price Display */}
                                     <div className="text-center pt-2">
-                                        <div className="text-sm text-slate-400 mb-1">Special Offer</div>
+                                        <div className="text-sm text-slate-400 mb-1">{tx('Special Offer', '특가 상품')}</div>
                                         <div className="text-3xl font-bold text-white">
                                             {currentPopup.packageId && currentPopup.price != null
                                                 ? `$${currentPopup.price.toFixed(2)} USD`
-                                                : 'Contact support'}
+                                                : tx('Contact support', '문의 필요')}
                                         </div>
                                     </div>
                                     
@@ -452,12 +455,12 @@ export default function PopupBanner() {
                                             {isPurchasing ? (
                                                 <>
                                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    Processing...
+                                                    {tx('Processing...', '처리 중...')}
                                                 </>
                                             ) : (
                                                 <>
                                                     <FontAwesomeIcon icon={faGift} />
-                                                Purchase Now
+                                                {tx('Purchase Now', '지금 구매')}
                                             </>
                                         )}
                                     </button>
@@ -472,7 +475,7 @@ export default function PopupBanner() {
                                             className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 cursor-pointer"
                                         />
                                         <label htmlFor="dontShowAgain" className="text-slate-400 text-xs cursor-pointer hover:text-slate-300 transition-colors">
-                                            Don&apos;t show again for 24 hours
+                                            {tx("Don't show again for 24 hours", '24시간 동안 다시 보지 않기')}
                                         </label>
                                     </div>
                                 </div>

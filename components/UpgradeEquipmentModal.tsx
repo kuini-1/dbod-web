@@ -19,6 +19,7 @@ import {
     ITEM_RANK_SUPERIOR,
 } from '@/lib/game/dboItemWorth';
 import EquipmentStatDetailModal from '@/components/EquipmentStatDetailModal';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface CharacterForModal {
     CharID?: number;
@@ -66,6 +67,8 @@ const EQUIPMENT_OPTIONS: { id: EquipmentCategoryId; label: string }[] = EQUIPMEN
 const ITEM_WORTH_MAX = 65535;
 
 export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints = 0, isOpen, onClose, onRefillSuccess, onUpgradeSuccess }: UpgradeEquipmentModalProps) {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [isClosing, setIsClosing] = useState(false);
     const [upgradeAmount, setUpgradeAmount] = useState(0);
     const [showRefillConfirm, setShowRefillConfirm] = useState(false);
@@ -258,7 +261,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                     <button
                         onClick={handleClose}
                         className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center bg-stone-800/80 hover:bg-red-500/20 rounded-lg transition-all duration-200 hover:scale-110 border border-red-500/30 cursor-pointer"
-                        aria-label="Close"
+                        aria-label={tx('Close', '닫기')}
                     >
                         <FontAwesomeIcon icon={faTimes} className="text-stone-300 text-lg" />
                     </button>
@@ -278,7 +281,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                             <div className="p-4 bg-stone-800/50 rounded-lg border border-red-500/20">
                                 <div className="text-stone-400 text-xs uppercase tracking-wide mb-1">{local.ccbdToken}</div>
                                 <div className="text-red-400 font-bold text-lg">{char?.CCBD_Token ?? 0}</div>
-                                <div className="text-stone-500 text-xs mt-0.5">5 per upgrade</div>
+                                <div className="text-stone-500 text-xs mt-0.5">{tx('5 per upgrade', '업그레이드당 5개')}</div>
                             </div>
                             <div className="p-4 bg-stone-800/50 rounded-lg border border-red-500/20">
                                 <div className="text-stone-400 text-xs uppercase tracking-wide mb-1">{local.ccbdLimit}</div>
@@ -298,7 +301,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                                 )}
                             </div>
                             <div className="p-4 bg-stone-800/50 rounded-lg border border-red-500/20">
-                                <div className="text-stone-400 text-xs uppercase tracking-wide mb-1">VIP</div>
+                                <div className="text-stone-400 text-xs uppercase tracking-wide mb-1">{tx('VIP', 'VIP')}</div>
                                 <div className="text-red-400 font-bold text-lg">{accountVip ?? 0}</div>
                             </div>
                         </div>
@@ -310,11 +313,11 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                                     {local.currentUpgradedStats}: <span className="text-red-400 font-bold">{itemWorth}%</span>
                                 </div>
                                 {maxUpgrades === 0 && itemWorth < ITEM_WORTH_MAX && (
-                                    <p className="text-amber-400/90 text-sm">Need 5 CCBD tokens per upgrade. You have {ccbdTokens} tokens.</p>
+                                    <p className="text-amber-400/90 text-sm">{tx('Need 5 CCBD tokens per upgrade.', '업그레이드당 CCBD 토큰 5개가 필요합니다.')} {tx('You have', '보유')}: {ccbdTokens} {tx('tokens', '토큰')}</p>
                                 )}
                                 {itemWorth >= ITEM_WORTH_MAX && (
                                     <p className="text-amber-400/90 text-sm">
-                                        Maximum upgraded equipment stats ({ITEM_WORTH_MAX}%) reached.
+                                        {tx('Maximum upgraded equipment stats reached.', '최대 장비 업그레이드 수치에 도달했습니다.')} ({ITEM_WORTH_MAX}%)
                                     </p>
                                 )}
                             </div>

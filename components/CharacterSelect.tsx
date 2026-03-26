@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { API } from '../lib/api/client';
 import Image from 'next/image';
+import { useLocale } from './LocaleProvider';
 
 interface Character {
     CharID: number;
@@ -18,6 +19,8 @@ interface CharacterSelectProps {
 }
 
 export default function CharacterSelect({ onSelect, selectedCharacter, title = "Select Character" }: CharacterSelectProps) {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [characters, setCharacters] = useState<Character[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -61,7 +64,7 @@ export default function CharacterSelect({ onSelect, selectedCharacter, title = "
                 className="w-full p-4 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 hover:border-indigo-500/50 rounded-lg transition-all duration-200 group cursor-pointer"
             >
                 <div className="flex items-center justify-between">
-                    <span className="text-white/60">{title}</span>
+                    <span className="text-white/60">{title === 'Select Character' ? tx('Select Character', '캐릭터 선택') : title}</span>
                     {selectedCharacter ? (
                         <div className="flex items-center space-x-3">
                             <div className="relative">
@@ -72,7 +75,7 @@ export default function CharacterSelect({ onSelect, selectedCharacter, title = "
                                     height={32}
                                 />
                                 <div className="absolute -bottom-2 -right-2 bg-slate-900 px-1.5 py-0.5 rounded-full text-xs font-bold text-indigo-400">
-                                    Lv.{selectedCharacter.Level}
+                                    {tx('Lv.', '레벨')} {selectedCharacter.Level}
                                 </div>
                             </div>
                             <span className="text-indigo-400 font-bold">{selectedCharacter.CharName}</span>
@@ -80,7 +83,7 @@ export default function CharacterSelect({ onSelect, selectedCharacter, title = "
                         </div>
                     ) : (
                         <div className="flex items-center space-x-2">
-                            <span className="text-slate-400">Select a character</span>
+                            <span className="text-slate-400">{tx('Select a character', '캐릭터를 선택하세요')}</span>
                             <span className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                         </div>
                     )}
@@ -111,7 +114,7 @@ export default function CharacterSelect({ onSelect, selectedCharacter, title = "
                                         height={32}
                                     />
                                     <div className="absolute -bottom-2 -right-2 bg-slate-900 px-1.5 py-0.5 rounded-full text-xs font-bold text-indigo-400">
-                                        Lv.{char.Level}
+                                        {tx('Lv.', '레벨')} {char.Level}
                                     </div>
                                 </div>
                                 <span className="font-bold">{char.CharName}</span>

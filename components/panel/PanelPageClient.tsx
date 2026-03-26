@@ -21,6 +21,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { API } from '@/lib/api/client';
 import { local } from '@/lib/utils/localize';
+import { useLocale } from '@/components/LocaleProvider';
 import UpgradeEquipmentModal from '@/components/UpgradeEquipmentModal';
 import CharacterDetailsModal from '@/components/CharacterDetailsModal';
 import { SuccessToast, WarningToast, DangerToast } from '@/lib/utils/toasts';
@@ -56,6 +57,8 @@ interface DonationLogProps {
 }
 
 const UserInfo = ({ username, email, cp, onChangePassword }: { username: string; email: string; cp: number; onChangePassword: () => void }) => {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     return (
         <div className='space-y-6'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -87,24 +90,24 @@ const UserInfo = ({ username, email, cp, onChangePassword }: { username: string;
                 </div>
 
                 <div className='bg-stone-800/50 rounded-xl p-6 border border-white/5 hover:border-red-500/50 transition-colors duration-300'>
-                    <h2 className='text-xl font-bold text-white/60 mb-4'>Account Status</h2>
+                    <h2 className='text-xl font-bold text-white/60 mb-4'>{tx('Account Status', '계정 상태')}</h2>
                     <div className='space-y-4'>
                         <div className='flex items-center justify-between p-3 bg-stone-700/50 rounded-lg'>
                             <div className='flex items-center space-x-2'>
                                 <FontAwesomeIcon icon={faCheckCircle} className='text-white/40 text-sm' />
-                                <span className='text-white/60'>Status</span>
+                                <span className='text-white/60'>{tx('Status', '상태')}</span>
                             </div>
                             <span className='px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-bold flex items-center gap-1'>
                                 <FontAwesomeIcon icon={faCheckCircle} className='text-xs' />
-                                active
+                                {tx('active', '활성')}
                             </span>
                         </div>
                         <div className='flex items-center justify-between p-3 bg-stone-700/50 rounded-lg'>
                             <div className='flex items-center space-x-2'>
                                 <FontAwesomeIcon icon={faClock} className='text-white/40 text-sm' />
-                                <span className='text-white/60'>Last Login</span>
+                                <span className='text-white/60'>{tx('Last Login', '최근 로그인')}</span>
                             </div>
-                            <span className='text-red-400 font-bold'>Today</span>
+                            <span className='text-red-400 font-bold'>{tx('Today', '오늘')}</span>
                         </div>
                     </div>
                 </div>
@@ -140,13 +143,15 @@ const UserInfo = ({ username, email, cp, onChangePassword }: { username: string;
 };
 
 const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersProps; onUpgradeClick: () => void; onDetailsClick: () => void }) => {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const canUpgrade = Number(char.CCBD_Token ?? 0) >= 5;
     return (
         <div className='group relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-stone-800/80 to-stone-900/80 transition-all duration-300 hover:border-red-500/50 hover:shadow-lg hover:shadow-red-500/5'>
             {canUpgrade ? (
                 <div className='absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-500/15 px-2 py-1 text-[10px] font-semibold text-red-300'>
                     <span className='w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse' />
-                    Upgrade ready
+                    {tx('Upgrade ready', '업그레이드 가능')}
                 </div>
             ) : null}
             <div className='p-6'>
@@ -156,14 +161,14 @@ const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersP
                             <Image src={`/classes/${char.Class}.png`} alt="" width={48} height={48} />
                         </div>
                         <div className='absolute -bottom-2 -right-2 rounded-lg bg-stone-900 px-2 py-0.5 text-xs font-bold text-red-400 ring-2 ring-stone-800'>
-                            Lv.{char.Level}
+                            {tx('Lv.', '레벨')} {char.Level}
                         </div>
                     </div>
                     <div className='min-w-0 flex-1'>
                         <h3 className='text-lg font-bold text-red-400 truncate'>{char.CharName}</h3>
                         <div className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60'>
                             <span>{local.sp}: <span className='text-red-400/90'>{char.SpPoint}</span></span>
-                            <span>Tokens: <span className='text-red-400/90'>{char.CCBD_Token ?? 0}</span></span>
+                            <span>{tx('Tokens', '토큰')}: <span className='text-red-400/90'>{char.CCBD_Token ?? 0}</span></span>
                         </div>
                     </div>
                 </div>
@@ -173,7 +178,7 @@ const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersP
                         className='flex-1 flex items-center justify-center gap-2 rounded-lg border border-white/5 bg-stone-800/50 px-4 py-2.5 text-sm font-medium text-white/70 transition-all duration-300 hover:border-red-500/50 hover:text-red-400 cursor-pointer'
                     >
                         <FontAwesomeIcon icon={faCircleInfo} className='text-sm' />
-                        <span>Details</span>
+                        <span>{tx('Details', '상세')}</span>
                     </button>
                     <button
                         onClick={onUpgradeClick}
@@ -184,7 +189,7 @@ const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersP
                         }`}
                     >
                         <FontAwesomeIcon icon={faArrowUp} className='text-sm' />
-                        <span>Upgrade</span>
+                        <span>{tx('Upgrade', '업그레이드')}</span>
                     </button>
                 </div>
             </div>
@@ -242,6 +247,8 @@ const Donations = ({ donations }: { donations: DonationLogProps[] }) => {
 };
 
 export default function PanelPageClient({ activeTab, redirectPath }: { activeTab: PanelTab; redirectPath: string }) {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const router = useRouter();
     const [account, setAccount] = useState<AccountProps & { vip?: number }>();
     const [characters, setCharacters] = useState<CharactersProps[]>([]);
@@ -270,14 +277,14 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
             const res = await API.post("/auth/change-password", data);
             if (res.status === 201) {
                 setChangePassword(false);
-                SuccessToast.fire('Password changed successfully');
+                SuccessToast.fire(tx('Password changed successfully', '비밀번호가 변경되었습니다'));
             } else if (res.status === 408) {
-                WarningToast.fire('Password does not match!');
+                WarningToast.fire(tx('Password does not match!', '비밀번호가 일치하지 않습니다!'));
             } else if (res.status === 409) {
-                DangerToast.fire('Unknown error!');
+                DangerToast.fire(tx('Unknown error!', '알 수 없는 오류!'));
             }
         } catch (error) {
-            DangerToast.fire('Unknown error!');
+            DangerToast.fire(tx('Unknown error!', '알 수 없는 오류!'));
         }
     };
 
@@ -359,7 +366,7 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
             <div className="text-white bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-500 mx-auto mb-4"></div>
-                    <div className="text-xl">Loading...</div>
+                    <div className="text-xl">{local.loading}</div>
                 </div>
             </div>
         );
@@ -465,7 +472,7 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
                             <>
                                 {characters.length === 0 ? (
                                     <div className="text-center py-8">
-                                        <p className="text-white/60 text-lg">No characters found</p>
+                                        <p className="text-white/60 text-lg">{tx('No characters found', '캐릭터가 없습니다')}</p>
                                     </div>
                                 ) : (
                                     <Characters

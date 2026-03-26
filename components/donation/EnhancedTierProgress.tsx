@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAward, faDollarSign, faGift, faCheck } from '@fortawesome/free-solid-svg-icons';
 import Image from 'next/image';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface DonationTier {
     id: number;
@@ -36,6 +37,8 @@ export default function EnhancedTierProgress({
     isFirstTimeDonor, 
     donationTiers 
 }: EnhancedTierProgressProps) {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [hoveredTier, setHoveredTier] = useState<number | null>(null);
     const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
     const [isPopupHovered, setIsPopupHovered] = useState(false);
@@ -141,7 +144,7 @@ export default function EnhancedTierProgress({
                             <FontAwesomeIcon icon={faDollarSign} className="text-2xl text-red-400" />
                         </div>
                         <div>
-                            <span className="text-xs text-white/60 block uppercase tracking-wide mb-1">Total Donated</span>
+                            <span className="text-xs text-white/60 block uppercase tracking-wide mb-1">{tx('Total Donated', '총 후원 금액')}</span>
                             <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-600">
                                 ${totalDonated.toLocaleString()}
                             </h3>
@@ -150,7 +153,7 @@ export default function EnhancedTierProgress({
                     {isFirstTimeDonor && (
                         <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg border-2 border-green-500/40 shadow-lg animate-pulse-slow">
                             <FontAwesomeIcon icon={faGift} className="text-lg text-green-400" />
-                            <span className="text-xs font-bold text-green-400 uppercase">First Time Bonus</span>
+                            <span className="text-xs font-bold text-green-400 uppercase">{tx('First Time Bonus', '첫 결제 보너스')}</span>
                         </div>
                     )}
                 </div>
@@ -253,7 +256,7 @@ export default function EnhancedTierProgress({
                                     />
                                 </div>
                                 <h3 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">
-                                    {donationTiers[hoveredTier]?.title || 'Unknown Tier'}
+                                    {donationTiers[hoveredTier]?.title || tx('Unknown Tier', '알 수 없는 티어')}
                                 </h3>
                             </div>
                             
@@ -281,7 +284,7 @@ export default function EnhancedTierProgress({
                                         </li>
                                     ))
                                     : (
-                                        <li className="text-sm text-white/50">No rewards configured.</li>
+                                        <li className="text-sm text-white/50">{tx('No rewards configured.', '설정된 보상이 없습니다.')}</li>
                                     )}
                             </ul>
                             
@@ -296,8 +299,8 @@ export default function EnhancedTierProgress({
                                     disabled={!isTierReached(donationTiers[hoveredTier]?.amount || 0)}
                                 >
                                     {isTierReached(donationTiers[hoveredTier]?.amount || 0) 
-                                        ? 'Claim Rewards' 
-                                        : `$${Math.max(0, (donationTiers[hoveredTier]?.amount || 0) - totalDonated).toLocaleString()} more needed`}
+                                        ? tx('Claim Rewards', '보상 수령') 
+                                        : `$${Math.max(0, (donationTiers[hoveredTier]?.amount || 0) - totalDonated).toLocaleString()} ${tx('more needed', '추가 필요')}`}
                                 </button>
                             </div>
                         </div>

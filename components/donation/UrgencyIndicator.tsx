@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClock, faFire, faGift } from '@fortawesome/free-solid-svg-icons';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface UrgencyIndicatorProps {
     bonusCP?: number;
@@ -11,6 +12,8 @@ interface UrgencyIndicatorProps {
 }
 
 export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: UrgencyIndicatorProps) {
+    const { locale } = useLocale();
+    const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
     const [timeLeft, setTimeLeft] = useState<string>('');
 
     useEffect(() => {
@@ -21,7 +24,7 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
                 const diff = end.getTime() - now.getTime();
                 
                 if (diff <= 0) {
-                    setTimeLeft('Event Ended');
+                    setTimeLeft(tx('Event Ended', '이벤트 종료'));
                     return;
                 }
                 
@@ -43,7 +46,7 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
             
             return () => clearInterval(interval);
         }
-    }, [eventEndDate]);
+    }, [eventEndDate, tx]);
 
     const hasActiveBonuses = (bonusCP && bonusCP > 0) || firstTime;
 
@@ -62,9 +65,9 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
                             <div className="absolute inset-0 blur-md bg-red-400 opacity-50" />
                         </div>
                         <div>
-                            <div className="text-xs text-white/70 uppercase tracking-wide">Event Active</div>
+                            <div className="text-xs text-white/70 uppercase tracking-wide">{tx('Event Active', '이벤트 진행 중')}</div>
                             <div className="text-lg font-bold text-red-400">
-                                +{(bonusCP * 100).toFixed(0)}% Bonus CP
+                                +{(bonusCP * 100).toFixed(0)}% {tx('Bonus CP', '보너스 CP')}
                             </div>
                         </div>
                     </div>
@@ -78,9 +81,9 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
                             <div className="absolute inset-0 blur-md bg-green-400 opacity-50" />
                         </div>
                         <div>
-                            <div className="text-xs text-white/70 uppercase tracking-wide">Limited Offer</div>
+                            <div className="text-xs text-white/70 uppercase tracking-wide">{tx('Limited Offer', '한정 혜택')}</div>
                             <div className="text-lg font-bold text-green-400">
-                                2x Cash Points!
+                                {tx('2x Cash Points!', '캐시 포인트 2배!')}
                             </div>
                         </div>
                     </div>
@@ -91,7 +94,7 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
                     <div className="flex items-center gap-3 bg-yellow-500/20 rounded-lg px-4 py-2 border border-yellow-500/30">
                         <FontAwesomeIcon icon={faClock} className="text-2xl text-yellow-400" />
                         <div>
-                            <div className="text-xs text-white/70 uppercase tracking-wide">Time Remaining</div>
+                            <div className="text-xs text-white/70 uppercase tracking-wide">{tx('Time Remaining', '남은 시간')}</div>
                             <div className="text-lg font-bold text-yellow-400">
                                 {timeLeft}
                             </div>
@@ -103,14 +106,14 @@ export default function UrgencyIndicator({ bonusCP, firstTime, eventEndDate }: U
                 {hasActiveBonuses && (
                     <div className="text-center md:text-left">
                         <div className="text-sm font-bold text-white/90">
-                            Don&apos;t miss out on these bonuses!
+                            {tx("Don't miss out on these bonuses!", '이 보너스를 놓치지 마세요!')}
                         </div>
                         <div className="text-xs text-white/60 mt-1">
                             {firstTime && bonusCP && bonusCP > 0 
-                                ? 'First-time bonus + event bonus active now'
+                                ? tx('First-time bonus + event bonus active now', '첫 결제 + 이벤트 보너스 동시 적용 중')
                                 : firstTime
-                                ? 'First-time bonus available for new players'
-                                : 'Event bonus active for limited time'
+                                ? tx('First-time bonus available for new players', '신규 유저 첫 결제 보너스 제공')
+                                : tx('Event bonus active for limited time', '한정 기간 이벤트 보너스 진행 중')
                             }
                         </div>
                     </div>

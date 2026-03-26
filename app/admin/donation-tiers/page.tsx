@@ -6,6 +6,7 @@ import { Plus, Save, Trash2 } from 'lucide-react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 type CashshopItem = {
   id: string;
@@ -45,6 +46,8 @@ function iconPath(name: string): string {
 }
 
 export default function AdminDonationTiersPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [tiers, setTiers] = useState<DonationTier[]>([]);
   const [cashshopItems, setCashshopItems] = useState<CashshopItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -335,8 +338,8 @@ export default function AdminDonationTiersPage() {
 
   return (
     <AdminShell
-      title="Donation Tiers Manager"
-      subtitle="Create and edit donation tiers, then attach or adjust cashshop reward items per tier."
+      title={tx('Donation Tiers Manager', '후원 티어 관리자')}
+      subtitle={tx('Create and edit donation tiers, then attach or adjust cashshop reward items per tier.', '후원 티어를 생성/편집하고 각 티어 보상 아이템을 설정합니다.')}
     >
       <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
         <AdminCard title="Tier List" description="Select a tier to edit or create a new one.">

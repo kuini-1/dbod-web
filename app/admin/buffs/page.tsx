@@ -4,8 +4,11 @@ import { useState } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 export default function AdminBuffsPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [actionResult, setActionResult] = useState('');
 
   const [skillCharId, setSkillCharId] = useState('');
@@ -49,7 +52,7 @@ export default function AdminBuffsPage() {
   }
 
   return (
-    <AdminShell title="Buff Manager" subtitle="Apply skill or item buffs with custom duration and values.">
+    <AdminShell title={tx('Buff Manager', '버프 관리자')} subtitle={tx('Apply skill or item buffs with custom duration and values.', '지속시간과 수치를 지정해 스킬/아이템 버프를 적용합니다.')}>
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminCard title="Apply Skill Buff (Single)">
           <div className="flex flex-col gap-3">

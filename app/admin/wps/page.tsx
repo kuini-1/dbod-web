@@ -12,10 +12,13 @@ import { serializeWpsScript } from '@/lib/wps/serializer';
 import { createEmptyScript, createSection } from '@/lib/wps/types';
 import { addSection } from '@/lib/wps/scriptMutate';
 import type { WpsScript } from '@/lib/wps/types';
+import { useLocale } from '@/components/LocaleProvider';
 
 type WpsFile = { id: number; name: string };
 
 export default function AdminWpsPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [wpsFiles, setWpsFiles] = useState<WpsFile[]>([]);
   const [wpsListError, setWpsListError] = useState('');
   const [wpsEditingId, setWpsEditingId] = useState<number | null>(null);
@@ -175,7 +178,7 @@ export default function AdminWpsPage() {
   }, []);
 
   return (
-    <AdminShell title="WPS Scripts" subtitle="Create and edit World Play Script files with drag-and-drop blocks.">
+    <AdminShell title={tx('WPS Scripts', 'WPS 스크립트')} subtitle={tx('Create and edit World Play Script files with drag-and-drop blocks.', '드래그 앤 드롭 블록으로 WPS 파일을 생성/편집합니다.')}>
       {wpsListError && (
         <p className="text-sm text-red-300">{wpsListError}</p>
       )}

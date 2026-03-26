@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 type OnlinePlayer = {
   accountId: number;
@@ -14,6 +15,8 @@ type OnlinePlayer = {
 };
 
 export default function AdminPlayersPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [onlinePlayers, setOnlinePlayers] = useState<OnlinePlayer[]>([]);
   const [onlineTotal, setOnlineTotal] = useState(0);
   const [filterText, setFilterText] = useState('');
@@ -104,18 +107,18 @@ export default function AdminPlayersPage() {
   }
 
   return (
-    <AdminShell title="Player Controls" subtitle="Live roster and actions on connected players.">
-      <AdminCard title="Online Players" description={`Total online: ${onlineTotal}`}>
+    <AdminShell title={tx('Player Controls', '플레이어 제어')} subtitle={tx('Live roster and actions on connected players.', '접속 중인 플레이어 목록과 관리 작업')}>
+      <AdminCard title={tx('Online Players', '온라인 플레이어')} description={`${tx('Total online', '총 접속자')}: ${onlineTotal}`}>
         <div className="mb-4 grid gap-3 md:grid-cols-3">
           <input
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
-            placeholder="Search name, charId, accountId"
+            placeholder={tx('Search name, charId, accountId', '이름, 캐릭터 ID, 계정 ID 검색')}
             value={filterText}
             onChange={(event) => setFilterText(event.target.value)}
           />
           <input
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
-            placeholder="Filter channel"
+            placeholder={tx('Filter channel', '채널 필터')}
             value={filterChannel}
             onChange={(event) => setFilterChannel(event.target.value)}
           />
@@ -123,7 +126,7 @@ export default function AdminPlayersPage() {
             className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500"
             onClick={loadOnlinePlayers}
           >
-            Refresh List
+            {tx('Refresh List', '목록 새로고침')}
           </button>
         </div>
 
@@ -131,11 +134,11 @@ export default function AdminPlayersPage() {
           <table className="w-full text-sm text-white/80">
             <thead className="bg-white/5 text-xs uppercase text-white/60">
               <tr>
-                <th className="px-3 py-2 text-left">Name</th>
-                <th className="px-3 py-2 text-left">Char ID</th>
-                <th className="px-3 py-2 text-left">Account</th>
-                <th className="px-3 py-2 text-left">Channel</th>
-                <th className="px-3 py-2 text-left">Actions</th>
+                <th className="px-3 py-2 text-left">{tx('Name', '이름')}</th>
+                <th className="px-3 py-2 text-left">{tx('Char ID', '캐릭터 ID')}</th>
+                <th className="px-3 py-2 text-left">{tx('Account', '계정')}</th>
+                <th className="px-3 py-2 text-left">{tx('Channel', '채널')}</th>
+                <th className="px-3 py-2 text-left">{tx('Actions', '작업')}</th>
               </tr>
             </thead>
             <tbody>
@@ -151,19 +154,19 @@ export default function AdminPlayersPage() {
                         className="rounded-lg border border-white/10 px-3 py-1 hover:bg-white/10"
                         onClick={() => setHealCharId(String(player.charId))}
                       >
-                        Heal
+                        {tx('Heal', '회복')}
                       </button>
                       <button
                         className="rounded-lg border border-white/10 px-3 py-1 hover:bg-white/10"
                         onClick={() => setKickTarget(String(player.charId))}
                       >
-                        Kick
+                        {tx('Kick', '강제 종료')}
                       </button>
                       <button
                         className="rounded-lg border border-white/10 px-3 py-1 hover:bg-white/10"
                         onClick={() => setMuteCharId(String(player.charId))}
                       >
-                        Mute
+                        {tx('Mute', '채팅 금지')}
                       </button>
                     </div>
                   </td>
@@ -172,7 +175,7 @@ export default function AdminPlayersPage() {
               {filteredPlayers.length === 0 ? (
                 <tr>
                   <td className="px-3 py-4 text-center text-white/50" colSpan={5}>
-                    No players match filters.
+                    {tx('No players match filters.', '필터와 일치하는 플레이어가 없습니다.')}
                   </td>
                 </tr>
               ) : null}

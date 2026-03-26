@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface DonationTier {
     id: number;
@@ -49,6 +50,8 @@ export default function DonationTierCards({
     characters = [],
     onClaimSuccess
 }: DonationTierCardsProps) {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [claimingTierId, setClaimingTierId] = useState<number | null>(null);
     const [selectedCharacterByTier, setSelectedCharacterByTier] = useState<Record<number, number>>({});
 
@@ -59,7 +62,7 @@ export default function DonationTierCards({
     const handleClaim = async (tierId: number) => {
         const characterId = selectedCharacterByTier[tierId];
         if (!characterId) {
-            WarningToast.fire('Please select a character for CCBD Limit +1 before claiming.');
+            WarningToast.fire(tx('Please select a character for CCBD Limit +1 before claiming.', '수령 전에 CCBD 제한 +1을 받을 캐릭터를 선택하세요.'));
             return;
         }
         if (claimingTierId) return;
@@ -67,13 +70,13 @@ export default function DonationTierCards({
         try {
             const response = await API.post('/donation-tiers/claim', { tierId, characterId });
             if (response.status === 200 && response.data?.success) {
-                SuccessToast.fire(response.data.message || 'Rewards claimed successfully!');
+                SuccessToast.fire(response.data.message || tx('Rewards claimed successfully!', '보상을 성공적으로 수령했습니다!'));
                 onClaimSuccess?.();
             } else {
-                WarningToast.fire(response.data?.message || 'Failed to claim rewards');
+                WarningToast.fire(response.data?.message || tx('Failed to claim rewards', '보상 수령에 실패했습니다'));
             }
         } catch (error) {
-            WarningToast.fire('Failed to claim rewards');
+            WarningToast.fire(tx('Failed to claim rewards', '보상 수령에 실패했습니다'));
         } finally {
             setClaimingTierId(null);
         }
@@ -122,7 +125,7 @@ export default function DonationTierCards({
                                         {tier.title || `Tier ${index + 1}`}
                                     </h3>
                                     <div className="text-sm text-white/60">
-                                        ${tier.amount || 0} Required
+                                        ${tier.amount || 0} {tx('Required', '필요')}
                                     </div>
                                 </div>
                             </div>
@@ -138,17 +141,17 @@ export default function DonationTierCards({
                                 {claimed ? (
                                     <span className="flex items-center gap-2">
                                         <FontAwesomeIcon icon={faCheck} className="text-xs" />
-                                        Claimed
+                                        {tx('Claimed', '수령 완료')}
                                     </span>
                                 ) : reached ? (
                                     <span className="flex items-center gap-2">
                                         <FontAwesomeIcon icon={faCheck} className="text-xs" />
-                                        Unlocked
+                                        {tx('Unlocked', '해금됨')}
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-2">
                                         <FontAwesomeIcon icon={faLock} className="text-xs" />
-                                        Locked
+                                        {tx('Locked', '잠김')}
                                     </span>
                                 )}
                             </div>
@@ -158,7 +161,7 @@ export default function DonationTierCards({
                         {!reached && (
                             <div className="mb-4">
                                 <div className="flex items-center justify-between text-xs text-white/60 mb-2">
-                                    <span>Progress</span>
+                                    <span>{tx('Progress', '진행도')}</span>
                                     <span>${totalDonated.toLocaleString()} / ${tier.amount || 0}</span>
                                 </div>
                                 <div className="h-2 bg-stone-800/50 rounded-full overflow-hidden">
@@ -170,14 +173,14 @@ export default function DonationTierCards({
                                     />
                                 </div>
                                 <div className="text-xs text-red-400 mt-1 font-semibold">
-                                    ${amountNeeded.toLocaleString()} more needed
+                                    ${amountNeeded.toLocaleString()} {tx('more needed', '추가 필요')}
                                 </div>
                             </div>
                         )}
 
                         {/* Rewards List */}
                         <div className="space-y-2">
-                            <div className="text-xs text-white/60 uppercase tracking-wide mb-2">Rewards:</div>
+                            <div className="text-xs text-white/60 uppercase tracking-wide mb-2">{tx('Rewards:', '보상:')}</div>
                             <ul className="space-y-2">
                                 <li className="flex items-start text-sm text-white/90">
                                     <div className={`relative w-8 h-8 rounded-lg flex items-center justify-center mr-3 mt-0.5 flex-shrink-0 border overflow-hidden ${
@@ -226,7 +229,7 @@ export default function DonationTierCards({
                                         </li>
                                     ))
                                     : (
-                                        <li className="text-sm text-white/50">No rewards configured.</li>
+                                        <li className="text-sm text-white/50">{tx('No rewards configured.', '설정된 보상이 없습니다.')}</li>
                                     )}
                             </ul>
                         </div>
@@ -236,7 +239,7 @@ export default function DonationTierCards({
                             <div className="mt-4 pt-4 border-t border-white/10">
                                 <label className="mb-3 block">
                                     <span className="mb-1 block text-xs text-white/65">
-                                        Select character for CCBD Limit +1:
+                                        {tx('Select character for CCBD Limit +1:', 'CCBD 제한 +1 적용 캐릭터 선택:')}
                                     </span>
                                     <Select
                                         value={selectedCharacterByTier[tier.id] ? String(selectedCharacterByTier[tier.id]) : ''}
@@ -248,7 +251,7 @@ export default function DonationTierCards({
                                         }
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select character" />
+                                            <SelectValue placeholder={tx('Select character', '캐릭터 선택')} />
                                         </SelectTrigger>
                                         <SelectContent>
                                         {characters.map((char) => (
@@ -264,7 +267,7 @@ export default function DonationTierCards({
                                     disabled={claimingTierId === tier.id || !selectedCharacterByTier[tier.id]}
                                     className="w-full py-3 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 transform hover:scale-105 shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                                 >
-                                    {claimingTierId === tier.id ? 'Claiming...' : 'Claim Rewards'}
+                                    {claimingTierId === tier.id ? tx('Claiming...', '수령 중...') : tx('Claim Rewards', '보상 수령')}
                                 </button>
                             </div>
                         )}

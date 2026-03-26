@@ -5,6 +5,7 @@ import { getBody } from '@/lib/wps/scriptMutate';
 import { WpsBlockCard } from './WpsBlockCard';
 import { WpsDropZone } from './WpsDropZone';
 import { addBlock, moveBlock } from '@/lib/wps/scriptMutate';
+import { useLocale } from '@/components/LocaleProvider';
 
 type WpsBlockListProps = {
   script: WpsScript;
@@ -19,6 +20,8 @@ export function WpsBlockList({
   sectionIdx,
   blockIndices,
 }: WpsBlockListProps) {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const body = getBody(script, sectionIdx, blockIndices);
 
   function handleDropPalette(
@@ -72,7 +75,7 @@ export function WpsBlockList({
         onDropPalette={handleDropPalette}
         onDropBlock={handleDropBlock}
       >
-        <span className="inline-block px-2 py-2 text-xs text-white/40">Drop block here</span>
+        <span className="inline-block px-2 py-2 text-xs text-white/40">{tx('Drop block here', '여기에 블록 놓기')}</span>
       </WpsDropZone>
     </div>
   );

@@ -3,62 +3,65 @@
 import Link from 'next/link';
 import { Users, Swords, Zap, Sparkles, Hammer } from 'lucide-react';
 import { local } from '@/lib/utils/localize';
-
-const features = [
-    {
-        icon: Users,
-        title: local.dualClass,
-        description: local.dualClassDesc,
-        gradient: 'from-red-500/20 via-red-500/10 to-transparent',
-        borderColor: 'border-red-500/30',
-        iconBg: 'bg-red-500/20',
-        iconColor: 'text-red-400',
-    },
-    {
-        icon: Swords,
-        title: local.equipmentUpgrade,
-        description: local.equipmentUpgradeDesc,
-        gradient: 'from-red-500/20 via-red-500/10 to-transparent',
-        borderColor: 'border-red-500/30',
-        iconBg: 'bg-red-500/20',
-        iconColor: 'text-red-400',
-    },
-    {
-        icon: Zap,
-        title: local.fastGameplay,
-        description: local.fastGameplayDesc,
-        gradient: 'from-red-500/20 via-red-500/10 to-transparent',
-        borderColor: 'border-red-500/30',
-        iconBg: 'bg-red-500/20',
-        iconColor: 'text-red-400',
-    },
-    {
-        icon: Sparkles,
-        title: local.channelBuffs,
-        description: local.channelBuffsDesc,
-        gradient: 'from-red-500/20 via-red-500/10 to-transparent',
-        borderColor: 'border-red-400/30',
-        iconBg: 'bg-red-400/20',
-        iconColor: 'text-red-300',
-    },
-    {
-        icon: Hammer,
-        title: local.craftedEquipment,
-        description: local.craftedEquipmentDesc,
-        gradient: 'from-red-600/20 via-red-600/10 to-transparent',
-        borderColor: 'border-red-400/30',
-        iconBg: 'bg-red-400/20',
-        iconColor: 'text-red-300',
-    },
-];
+import { useLocale } from '@/components/LocaleProvider';
 
 export function CoreFeaturesSection() {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+    const features = [
+        {
+            icon: Users,
+            title: local.dualClass,
+            description: local.dualClassDesc,
+            gradient: 'from-red-500/20 via-red-500/10 to-transparent',
+            borderColor: 'border-red-500/30',
+            iconBg: 'bg-red-500/20',
+            iconColor: 'text-red-400',
+        },
+        {
+            icon: Swords,
+            title: local.equipmentUpgrade,
+            description: local.equipmentUpgradeDesc,
+            gradient: 'from-red-500/20 via-red-500/10 to-transparent',
+            borderColor: 'border-red-500/30',
+            iconBg: 'bg-red-500/20',
+            iconColor: 'text-red-400',
+        },
+        {
+            icon: Zap,
+            title: local.fastGameplay,
+            description: local.fastGameplayDesc,
+            gradient: 'from-red-500/20 via-red-500/10 to-transparent',
+            borderColor: 'border-red-500/30',
+            iconBg: 'bg-red-500/20',
+            iconColor: 'text-red-400',
+        },
+        {
+            icon: Sparkles,
+            title: local.channelBuffs,
+            description: local.channelBuffsDesc,
+            gradient: 'from-red-500/20 via-red-500/10 to-transparent',
+            borderColor: 'border-red-400/30',
+            iconBg: 'bg-red-400/20',
+            iconColor: 'text-red-300',
+        },
+        {
+            icon: Hammer,
+            title: local.craftedEquipment,
+            description: local.craftedEquipmentDesc,
+            gradient: 'from-red-600/20 via-red-600/10 to-transparent',
+            borderColor: 'border-red-400/30',
+            iconBg: 'bg-red-400/20',
+            iconColor: 'text-red-300',
+        },
+    ];
+
     return (
         <section className="relative w-full py-24 md:py-32 px-4 overflow-hidden">
             {/* Section header */}
             <div className="max-w-4xl mx-auto text-center mb-16 md:mb-24">
                 <p className="text-red-400 font-semibold text-sm uppercase tracking-[0.2em] mb-4">
-                    Why Play Here
+                    {tx('Why Play Here', '왜 여기서 플레이해야 할까요')}
                 </p>
                 <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-200 via-red-400 to-red-200">
@@ -66,7 +69,7 @@ export function CoreFeaturesSection() {
                     </span>
                 </h2>
                 <p className="mt-6 text-lg md:text-xl text-red-100/70 max-w-2xl mx-auto">
-                    Major features that set our server apart
+                    {tx('Major features that set our server apart', '우리 서버를 특별하게 만드는 핵심 기능')}
                 </p>
             </div>
 

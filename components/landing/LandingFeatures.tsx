@@ -9,35 +9,35 @@ import {
     Hammer 
 } from 'lucide-react';
 
-const features = [
-    {
-        icon: Users,
-        title: local.dualClass,
-        description: local.dualClassDesc,
-    },
-    {
-        icon: Swords,
-        title: local.equipmentUpgrade,
-        description: local.equipmentUpgradeDesc,
-    },
-    {
-        icon: Zap,
-        title: local.fastGameplay,
-        description: local.fastGameplayDesc,
-    },
-    {
-        icon: Sparkles,
-        title: local.channelBuffs,
-        description: local.channelBuffsDesc,
-    },
-    {
-        icon: Hammer,
-        title: local.craftedEquipment,
-        description: local.craftedEquipmentDesc,
-    },
-];
-
 export function LandingFeatures() {
+    const features = [
+        {
+            icon: Users,
+            title: local.dualClass,
+            description: local.dualClassDesc,
+        },
+        {
+            icon: Swords,
+            title: local.equipmentUpgrade,
+            description: local.equipmentUpgradeDesc,
+        },
+        {
+            icon: Zap,
+            title: local.fastGameplay,
+            description: local.fastGameplayDesc,
+        },
+        {
+            icon: Sparkles,
+            title: local.channelBuffs,
+            description: local.channelBuffsDesc,
+        },
+        {
+            icon: Hammer,
+            title: local.craftedEquipment,
+            description: local.craftedEquipmentDesc,
+        },
+    ];
+
     return (
         <section className="w-full px-4 py-16 mt-4 flex flex-col items-center bg-stone-800/30 backdrop-blur-sm space-y-8">
             <h2 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-600">

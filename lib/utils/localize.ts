@@ -1,5 +1,6 @@
-// Simplified localization - can be enhanced later
-export const local: Record<string, string> = {
+export type Locale = 'en' | 'kr';
+
+const enMessages: Record<string, string> = {
     download: "DOWNLOAD GAME",
     navItemHome: "Home",
     navItemNews: "News",
@@ -235,6 +236,152 @@ export const local: Record<string, string> = {
     statDetailFourSlotsHint:
         "Uses a single worth pool ≈{0} and four distinct enchant lines (greedy, lowest cost first), like four ProcessRandomOption steps.",
 };
+
+const krOverrides: Record<string, string> = {
+    download: "게임 다운로드",
+    navItemHome: "홈",
+    navItemNews: "뉴스",
+    navItemDonation: "후원",
+    navItemCashshop: "캐시샵",
+    navItemLanguage: "언어",
+    navSubItemLogin: "로그인",
+    navSubItemRegister: "회원가입",
+    navSubItemProfile: "프로필",
+    navSubItemLogout: "로그아웃",
+    login: "로그인",
+    username: "아이디",
+    password: "비밀번호",
+    email: "이메일",
+    register: "회원가입",
+    confirmPassword: "비밀번호 확인",
+    usernameError: "* 아이디는 2~16자여야 합니다.",
+    passwordError: "* 비밀번호는 2~16자여야 합니다.",
+    emailError: "* 이메일을 확인해주세요.",
+    confirmPasswordError: "* 비밀번호가 일치하지 않습니다.",
+    beginAdventure: "모험을 시작하세요.",
+    registerDownload: "지금 가입하고 다운로드하여 DBO Daebak의 세계를 즐겨보세요",
+    homeRegister: "회원가입",
+    homeDownload: "다운로드",
+    serverStatus: "서버 상태",
+    playerCount: "접속자 수",
+    auth: "인증",
+    online: "온라인",
+    offline: "오프라인",
+    userInfo: "유저 정보",
+    characters: "캐릭터",
+    donations: "후원",
+    cashPoints: "캐시 포인트",
+    changePassword: "비밀번호 변경",
+    donate: "후원하기",
+    currentPassword: "현재 비밀번호",
+    newPassword: "새 비밀번호",
+    sp: "SP",
+    wagu: "와구",
+    donation: "후원",
+    donationTiers: "후원 티어",
+    coreFeatures: "핵심 기능",
+    dualClass: "듀얼 클래스",
+    dualClassDesc: "캐릭터당 2개의 클래스를 선택하고 특수 아이템으로 자유롭게 전환하세요. 스킬 습득 후 클래스 전환 없이 서브 클래스 스킬을 자유롭게 사용할 수 있습니다.",
+    equipmentUpgrade: "장비 업그레이드 시스템",
+    equipmentUpgradeDesc: "장비 기본 스탯은 등급에 따라 결정됩니다. 업그레이드 시 랜덤 기본 스탯이 추가되거나 3강마다 기존 기본 스탯이 강화됩니다.",
+    fastGameplay: "빠른 게임플레이",
+    fastGameplayDesc: "높은 EXP, 이동 속도, 비행 속도, 스탯으로 빠른 성장을 지원합니다.",
+    channelBuffs: "채널 및 글로벌 버프",
+    channelBuffsDesc: "채널 보너스 스탯과 글로벌 버프로 플레이를 강화합니다.",
+    craftedEquipment: "제작 장비",
+    craftedEquipmentDesc: "웹사이트에서 추가 업그레이드 가능한 보너스 스탯. 재화는 CCBD에서 획득합니다.",
+    characterDetails: "캐릭터 상세",
+    refill: "보충",
+    refillConfirmTitle: "CCBD 입장 횟수 보충",
+    refillConfirmMessage: "25 캐시 포인트로 CCBD 입장 횟수를 최대({0})로 보충하시겠습니까?",
+    refillSuccess: "CCBD 입장 횟수가 보충되었습니다",
+    applyEquipmentUpgrade: "업그레이드 적용",
+    upgradeEquipmentSuccess: "장비 스탯이 업그레이드되었습니다",
+    upgradeEquipmentStats: "장비 스탯 업그레이드",
+    ccbdToken: "CCBD 토큰",
+    ccbdLimit: "CCBD 제한",
+    ccbdEntry: "CCBD 입장",
+    currentUpgradedStats: "현재 장비 업그레이드 스탯",
+    increaseStatsBy: "+{0}% 추가 (총 {1}%)",
+    craftedEquipmentOnly: "이 업그레이드는 제작 장비에만 적용됩니다.",
+    statsPreviewTitle: "스탯 미리보기",
+    statsPreviewHint: "서버 기준 목록입니다. 슬롯/레벨/등급이 일치하며, 행을 선택하면 짧은 랜덤 미리보기를 보여줍니다.",
+    enchantPreviewLoadError: "강화 테이블(table_item_enchant_data_rows.csv)을 불러올 수 없습니다.",
+    enchantPreviewRank: "아이템 등급",
+    enchantPreviewLevel: "요구 레벨",
+    enchantPreviewCategory: "장비",
+    enchantPreviewBefore: "현재 아이템 가치 ({0}%)",
+    enchantPreviewAfter: "업그레이드 후 ({0}% 아이템 가치)",
+    enchantPreviewRange: "최소 {0} — 최대 {1}",
+    enchantPreviewWorthPool: "가치 풀(float): {0}",
+    enchantPreviewFourthSlotNote: "네 번째 랜덤 옵션은 항상 가능한 최대값으로 계산됩니다.",
+    enchantPreviewDisclaimer: "미리보기는 가치 풀과 테이블 비용만 사용합니다. 일부 게임 내 보너스는 반영되지 않습니다.",
+    loading: "로딩 중...",
+    cancel: "취소",
+    confirm: "확인",
+    statModalReroll: "재추첨 시뮬레이션",
+    statModalRerollAria: "이 스탯의 랜덤 값을 다시 추첨",
+    statModalRerollHint: "선택한 동일 스탯으로 새로운 랜덤 값을 생성합니다.",
+    statModalNotOnRank: "이 스탯은 {0} 등급 랜덤 풀에 없습니다.",
+    statModalCannotRoll: "현재 설정으로는 이 라인이 양수 값으로 생성될 수 없습니다.",
+    statModalSampleItemTitle: "생성 시",
+    statModalSampleItemCaption: "{1} 등급 아이템 생성 시 랜덤 스탯 {0}줄이 생성됩니다.",
+    statModalLineGenRange: "라인 {0}: {1} {2}~{3}",
+    statModalIncompleteGen: "모든 라인을 채우지 못했습니다. 다른 레벨이나 슬롯을 시도하세요.",
+    statModalUpgradeGearTitle: "장비 업그레이드 단계 (+3 … +15)",
+    statModalUpgradeGearIntro: "GameServer item.cpp와 동일한 방식으로 +3/+6/+9/+12/+15 단계에서 랜덤 옵션 슬롯을 선택합니다.",
+    statModalGearUpgradeLevel: "장비 +{0}",
+    statModalUpgradeNewStatInline: "새 스탯",
+    statModalUpgradeRollRange: "1부터 {0}까지 랜덤",
+    statModalAfterUpgradeTitle: "+15 이후 결과",
+    statModalAfterUpgradeCaption: "서버 순서로 채워진 랜덤 옵션 슬롯 결과입니다.",
+    statModalLineN: "라인 {0}:",
+    statModalUpgradeFooter: "스탯마다 비용이 달라 최대값과 상승폭이 다릅니다.",
+    statModalTechnicalDetails: "세부 정보",
+    statModalDetailLevel: "요구 레벨",
+    statModalDetailItemWorth: "아이템 가치",
+    statModalDetailWorthPool: "가치 풀",
+    statModalDetailCost: "포인트당 비용",
+    statDetailOpenAria: "이 스탯의 업그레이드 시뮬레이션 열기",
+    enchantNoRowsForEquipment: "선택한 장비 슬롯과 요구 레벨에 맞는 강화 행이 없습니다.",
+    adminControl: "DBOD 관리",
+    adminNavTitle: "관리자",
+    adminOverview: "관리 개요",
+    adminOverviewSubtitle: "핵심 서비스를 모니터링하고 플레이어 도구로 빠르게 이동하세요.",
+    adminPlayers: "플레이어",
+    adminBuffs: "버프",
+    adminItems: "아이템",
+    adminDonationTiers: "후원 티어",
+    adminServer: "서버",
+    adminWpsScripts: "WPS 스크립트",
+    adminMasterStatus: "마스터 상태",
+    adminQuickActions: "빠른 작업",
+    adminWebBridge: "웹 브리지",
+};
+
+const messages: Record<Locale, Record<string, string>> = {
+    en: enMessages,
+    kr: { ...enMessages, ...krOverrides },
+};
+
+let activeLocale: Locale = 'en';
+
+export const setActiveLocale = (locale: Locale) => {
+    activeLocale = locale;
+};
+
+export const t = (key: string, locale: Locale = activeLocale, fallback?: string): string => {
+    return messages[locale]?.[key] ?? messages.en[key] ?? fallback ?? key;
+};
+
+export const local: Record<string, string> = new Proxy(
+    {},
+    {
+        get(_, prop: string) {
+            return t(prop, activeLocale);
+        },
+    }
+) as Record<string, string>;
 
 // Helper function for string formatting
 export const formatString = (template: string, ...args: any[]): string => {

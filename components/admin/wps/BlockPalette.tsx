@@ -2,10 +2,14 @@
 
 import { blockLabel } from '@/lib/wps/schema';
 import { WPS_ACTIONS, WPS_CONDITIONS } from '@/lib/wps/schema';
+import { useLocale } from '@/components/LocaleProvider';
 
 const DRAG_TYPE_PALETTE = 'application/x-wps-palette';
 
 export function BlockPalette() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+
   function handleDragStart(e: React.DragEvent, kind: 'action' | 'condition', name: string) {
     e.dataTransfer.setData(DRAG_TYPE_PALETTE, JSON.stringify({ kind, name }));
     e.dataTransfer.effectAllowed = 'copy';
@@ -13,7 +17,7 @@ export function BlockPalette() {
 
   return (
     <div className="flex max-h-[calc(100vh-8rem)] flex-col gap-4 overflow-y-auto rounded-xl border border-white/10 bg-black/30 p-4 text-sm">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-white/60">Actions</h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-white/60">{tx('Actions', '액션')}</h3>
       <div className="flex flex-wrap gap-2">
         {WPS_ACTIONS.map((name) => (
           <div
@@ -26,7 +30,7 @@ export function BlockPalette() {
           </div>
         ))}
       </div>
-      <h3 className="mt-2 text-xs font-semibold uppercase tracking-wider text-white/60">Conditions</h3>
+      <h3 className="mt-2 text-xs font-semibold uppercase tracking-wider text-white/60">{tx('Conditions', '조건')}</h3>
       <div className="flex flex-wrap gap-2">
         {WPS_CONDITIONS.map((name) => (
           <div

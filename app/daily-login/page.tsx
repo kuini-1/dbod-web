@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { API } from '@/lib/api/client';
@@ -8,6 +8,7 @@ import { local } from '@/lib/utils/localize';
 import CharacterSelect from '@/components/CharacterSelect';
 import { WarningToast, SuccessToast } from '@/lib/utils/toasts';
 import toast from 'react-hot-toast';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface DailyReward {
     date: number;
@@ -19,6 +20,8 @@ interface DailyReward {
 }
 
 export default function DailyLoginPage() {
+    const { locale } = useLocale();
+    const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
     const router = useRouter();
     const [rewards, setRewards] = useState<DailyReward[]>([]);
     const [loading, setLoading] = useState(true);
@@ -48,18 +51,18 @@ export default function DailyLoginPage() {
                     setRewards(response.data.data);
                     setTimeUntilReset(response.data.timeUntilReset);
                 } else {
-                    setError(response.data.message || 'Failed to fetch rewards');
+                    setError(response.data.message || tx('Failed to fetch rewards', '보상을 불러오지 못했습니다'));
                 }
             } catch (err) {
                 console.error('Error details:', err);
-                setError('Error fetching rewards. Please try again later.');
+                setError(tx('Error fetching rewards. Please try again later.', '보상을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'));
             } finally {
                 setLoading(false);
             }
         };
 
         checkAuth();
-    }, [router]);
+    }, [router, locale, tx]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -90,17 +93,17 @@ export default function DailyLoginPage() {
     useEffect(() => {
         const totalSeconds = timeUntilReset.days * 86400 + timeUntilReset.hours * 3600 + timeUntilReset.minutes * 60 + timeUntilReset.seconds;
         if (totalSeconds > 0 && totalSeconds <= 3600) {
-            toast(`Daily rewards will reset in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m! Make sure to claim all available rewards.`, {
+            toast(tx(`Daily rewards will reset in ${timeUntilReset.hours}h ${timeUntilReset.minutes}m! Make sure to claim all available rewards.`, `일일 보상이 ${timeUntilReset.hours}시간 ${timeUntilReset.minutes}분 후 초기화됩니다! 받을 수 있는 보상을 모두 수령하세요.`), {
                 duration: 5000,
                 position: 'top-center',
                 icon: '⚠️'
             });
         }
-    }, [timeUntilReset]);
+    }, [timeUntilReset, locale, tx]);
 
     const handleClaim = async (date: number) => {
         if (!selectedCharacter) {
-            WarningToast.fire('Please select a character first');
+            WarningToast.fire(tx('Please select a character first', '먼저 캐릭터를 선택하세요'));
             return;
         }
 
@@ -114,16 +117,16 @@ export default function DailyLoginPage() {
             const response = await API.post("/daily-rewards/claim", requestData);
 
             if (response.status === 200) {
-                SuccessToast.fire('Reward claimed successfully!');
+                SuccessToast.fire(tx('Reward claimed successfully!', '보상을 성공적으로 수령했습니다!'));
                 const rewardsResponse = await API.get("/daily-rewards");
                 setRewards(rewardsResponse.data.data);
                 setTimeUntilReset(rewardsResponse.data.timeUntilReset);
             } else {
-                WarningToast.fire(response.data.message || 'Failed to claim reward');
+                WarningToast.fire(response.data.message || tx('Failed to claim reward', '보상 수령에 실패했습니다'));
             }
         } catch (error: any) {
             console.error('Error claiming reward:', error);
-            WarningToast.fire(error.response?.data?.message || 'Failed to claim reward');
+            WarningToast.fire(error.response?.data?.message || tx('Failed to claim reward', '보상 수령에 실패했습니다'));
         }
     };
 
@@ -141,7 +144,7 @@ export default function DailyLoginPage() {
                     onClick={() => window.location.reload()} 
                     className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 cursor-pointer"
                 >
-                    Retry
+                    {local.retry}
                 </button>
             </div>
         );
@@ -152,12 +155,12 @@ export default function DailyLoginPage() {
             <div className="max-w-7xl mx-auto">
                 <div className="bg-stone-800/50 rounded-xl p-6 md:p-10 border border-white/5">
                     <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-                        Daily Login Rewards
+                        {local.dailyLoginRewards}
                     </h1>
 
                     <div className="text-center mb-8">
                         <div className="text-lg text-white/60">
-                            Next Reset: {timeUntilReset.days}d {timeUntilReset.hours}h {timeUntilReset.minutes}m {timeUntilReset.seconds}s
+                            {local.nextReset} {timeUntilReset.days}d {timeUntilReset.hours}h {timeUntilReset.minutes}m {timeUntilReset.seconds}s
                         </div>
                     </div>
 
@@ -165,7 +168,7 @@ export default function DailyLoginPage() {
                         <CharacterSelect
                             onSelect={setSelectedCharacter}
                             selectedCharacter={selectedCharacter}
-                            title="Select Character to Receive Rewards"
+                            title={local.selectCharacterTitle}
                         />
                     </div>
 
@@ -189,7 +192,7 @@ export default function DailyLoginPage() {
                                     >
                                         <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
                                             <span className="text-lg font-bold mb-2">
-                                                {isBonusDay ? 'Bonus' : `Day ${date}`}
+                                                {isBonusDay ? local.bonus : `${local.day} ${date}`}
                                             </span>
 
                                             <Image 
@@ -207,7 +210,7 @@ export default function DailyLoginPage() {
                                             {reward && (
                                                 <div className="mt-2">
                                                     {reward.claimed ? (
-                                                        <span className="text-xs text-green-400">Claimed</span>
+                                                        <span className="text-xs text-green-400">{local.claimed}</span>
                                                     ) : reward.available ? (
                                                         <button
                                                             onClick={() => handleClaim(date)}
@@ -217,11 +220,11 @@ export default function DailyLoginPage() {
                                                                     : 'bg-red-500 hover:bg-red-600'
                                                             }`}
                                                         >
-                                                            Claim
+                                                            {local.claim}
                                                         </button>
                                                     ) : (
                                                         <span className="text-xs text-white/40">
-                                                            Not Available
+                                                            {local.notAvailable}
                                                         </span>
                                                     )}
                                                 </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 type AdminCashshopItem = {
   tblidx: number;
@@ -16,6 +17,8 @@ type AdminCashshopItem = {
 };
 
 export default function AdminItemsPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [actionResult, setActionResult] = useState('');
   const [cashshopRows, setCashshopRows] = useState<AdminCashshopItem[]>([]);
   const [cashshopLoading, setCashshopLoading] = useState(false);
@@ -96,7 +99,7 @@ export default function AdminItemsPage() {
   }, []);
 
   return (
-    <AdminShell title="Item Tools" subtitle="Deliver items to one player or every online character.">
+    <AdminShell title={tx('Item Tools', '아이템 도구')} subtitle={tx('Deliver items to one player or every online character.', '단일 플레이어 또는 전체 접속자에게 아이템을 지급합니다.')}>
       <div className="grid gap-6 lg:grid-cols-2">
         <AdminCard title="Give Item (Single)">
           <div className="flex flex-col gap-3">

@@ -4,6 +4,8 @@ import { Toaster } from 'react-hot-toast';
 import PopupBanner from '@/components/PopupBanner';
 import NavbarClient from '@/components/NavbarClient';
 import ScrollToTop from '@/components/ScrollToTop';
+import { LocaleProvider } from '@/components/LocaleProvider';
+import { cookies } from 'next/headers';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,18 +22,24 @@ export const metadata = {
   description: "Dragon Ball Online Daebak - Official Website",
 };
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const cookieStore = await cookies();
+  const savedLocale = cookieStore.get('siteLocale')?.value;
+  const initialLocale = savedLocale === 'kr' ? 'kr' : 'en';
+
   return (
-    <html lang="en">
+    <html lang={initialLocale}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <Toaster />
-        <PopupBanner />
-        <NavbarClient />
-        <ScrollToTop />
-        {children}
+        <LocaleProvider initialLocale={initialLocale}>
+          <Toaster />
+          <PopupBanner />
+          <NavbarClient />
+          <ScrollToTop />
+          {children}
+        </LocaleProvider>
       </body>
     </html>
   );

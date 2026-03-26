@@ -3,17 +3,21 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { local } from '@/lib/utils/localize';
+import { useLocale } from '@/components/LocaleProvider';
 
 const heroImage = '34556.jpg';
 
 export function LandingHero() {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+
     return (
         <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
             {/* Game imagery background - DBO in-game feel */}
             <div className="absolute inset-0 z-0">
                 <Image
                     src={`/${heroImage}`}
-                    alt="Dragon Ball Online Daebak"
+                    alt={tx('Dragon Ball Online Daebak', '드래곤볼 온라인 대박')}
                     fill
                     priority
                     className="object-cover object-center scale-105"
@@ -35,10 +39,10 @@ export function LandingHero() {
                 {/* Headline - bold anime/MMORPG style */}
                 <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-4">
                     <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-200 via-red-400 to-red-300 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]">
-                        {local.beginAdventure.split('.')[0] || 'BEGIN YOUR ADVENTURE'}
+                        {local.beginAdventure.split('.')[0] || tx('BEGIN YOUR ADVENTURE', '모험을 시작하세요')}
                     </span>
                     <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-red-500 to-red-400 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)] mt-2">
-                        DBO DAEBAK
+                        {tx('DBO DAEBAK', 'DBO 대박')}
                     </span>
                 </h1>
 

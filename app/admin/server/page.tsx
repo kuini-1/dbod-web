@@ -4,8 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 export default function AdminServerPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [actionResult, setActionResult] = useState('');
   const [noticeMessage, setNoticeMessage] = useState('');
   const [noticeChannel, setNoticeChannel] = useState('');
@@ -111,17 +114,17 @@ export default function AdminServerPage() {
   }, []);
 
   return (
-    <AdminShell title="Server Tools" subtitle="Broadcast messages and run master queries.">
+    <AdminShell title={tx('Server Tools', '서버 도구')} subtitle={tx('Broadcast messages and run master queries.', '공지 전송 및 마스터 조회를 실행합니다.')}>
       <div className="grid gap-6 lg:grid-cols-2">
-        <AdminCard title="Current Bonus State">
+        <AdminCard title={tx('Current Bonus State', '현재 보너스 상태')}>
           <div className="flex flex-col gap-2 text-sm text-white/70">
             <button
               className="self-start rounded-xl border border-white/10 px-3 py-1 text-xs hover:bg-white/10"
               onClick={loadBonusState}
             >
-              Refresh Bonus State
+              {tx('Refresh Bonus State', '보너스 상태 새로고침')}
             </button>
-            {!bonusState && <span>No bonus state loaded.</span>}
+            {!bonusState && <span>{tx('No bonus state loaded.', '불러온 보너스 상태가 없습니다.')}</span>}
             {bonusState && (
               <div className="flex flex-col gap-1">
                 <span>Solo EXP Bonus: {bonusState.soloExpBonus}%</span>
@@ -148,9 +151,9 @@ export default function AdminServerPage() {
           </div>
         </AdminCard>
 
-        <AdminCard title="Channel Bonuses">
+        <AdminCard title={tx('Channel Bonuses', '채널 보너스')}>
           <div className="flex flex-col gap-2 text-sm text-white/70">
-            {!bonusState?.channelBonuses?.length && <span>No channel bonuses set.</span>}
+            {!bonusState?.channelBonuses?.length && <span>{tx('No channel bonuses set.', '설정된 채널 보너스가 없습니다.')}</span>}
             {bonusState?.channelBonuses?.length > 0 &&
               bonusState.channelBonuses.map((bonus: any) => (
                 <div key={bonus.channelId} className="rounded-xl border border-white/10 px-3 py-2">
@@ -165,7 +168,7 @@ export default function AdminServerPage() {
         </AdminCard>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
-        <AdminCard title="Send Notice">
+        <AdminCard title={tx('Send Notice', '공지 전송')}>
           <div className="flex flex-col gap-3">
             <input
               className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
@@ -189,12 +192,12 @@ export default function AdminServerPage() {
                 setResult('Notice', result);
               }}
             >
-              Send Notice
+              {tx('Send Notice', '공지 전송')}
             </button>
           </div>
         </AdminCard>
 
-        <AdminCard title="Execute GM Command">
+        <AdminCard title={tx('Execute GM Command', 'GM 명령 실행')}>
           <div className="flex flex-col gap-3">
             <input
               className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
@@ -218,14 +221,14 @@ export default function AdminServerPage() {
                 setResult('GM Command', result);
               }}
             >
-              Execute Command
+              {tx('Execute Command', '명령 실행')}
             </button>
           </div>
         </AdminCard>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <AdminCard title="Event Bonuses">
+        <AdminCard title={tx('Event Bonuses', '이벤트 보너스')}>
           <div className="flex flex-col gap-3">
             <input
               className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
@@ -355,7 +358,7 @@ export default function AdminServerPage() {
           </div>
         </AdminCard>
 
-        <AdminCard title="Monster Controls">
+        <AdminCard title={tx('Monster Controls', '몬스터 제어')}>
           <div className="flex flex-col gap-3">
             <label className="flex items-center gap-2 text-sm text-white/80">
               <input
@@ -517,7 +520,7 @@ export default function AdminServerPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <AdminCard title="Channel Stat Bonus">
+        <AdminCard title={tx('Channel Stat Bonus', '채널 스탯 보너스')}>
           <div className="flex flex-col gap-3">
             <input
               className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
@@ -598,7 +601,7 @@ export default function AdminServerPage() {
           </div>
         </AdminCard>
 
-        <AdminCard title="Kill Debuff">
+        <AdminCard title={tx('Kill Debuff', '킬 디버프')}>
           <div className="flex flex-col gap-3">
             <label className="flex items-center gap-2 text-sm text-white/80">
               <input
@@ -645,7 +648,7 @@ export default function AdminServerPage() {
         </AdminCard>
       </div>
 
-      <AdminCard title="Master Queries">
+      <AdminCard title={tx('Master Queries', '마스터 조회')}>
         <div className="grid gap-3 md:grid-cols-3">
           <select
             className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm"
@@ -683,7 +686,7 @@ export default function AdminServerPage() {
             setMasterQueryResult(JSON.stringify(result, null, 2));
           }}
         >
-          Run Query
+          {tx('Run Query', '조회 실행')}
         </button>
 
         {masterQueryResult ? (

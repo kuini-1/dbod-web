@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBolt, faGem, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { API } from '@/lib/api/client';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface QuickPurchaseProps {
     bonusCP?: number;
@@ -14,6 +15,8 @@ interface QuickPurchaseProps {
 
 export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: QuickPurchaseProps) {
     const router = useRouter();
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [lastPurchase, setLastPurchase] = useState<{ price: number; cp: number } | null>(null);
     const [isReturningCustomer, setIsReturningCustomer] = useState(false);
     const [loading, setLoading] = useState<number | null>(null);
@@ -56,7 +59,7 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
                     return;
                 }
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || 'Failed to create checkout session');
+                throw new Error(errorData.detail || tx('Failed to create checkout session', '체크아웃 세션 생성 실패'));
             }
             
             const data = await response.json();
@@ -64,11 +67,11 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
             if (data.url) {
                 window.location.href = data.url;
             } else {
-                throw new Error('No checkout URL received');
+                throw new Error(tx('No checkout URL received', '체크아웃 URL을 받지 못했습니다'));
             }
         } catch (error) {
             console.error('Error creating checkout session:', error);
-            alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
+            alert(error instanceof Error ? error.message : tx('Failed to start checkout. Please try again.', '결제를 시작하지 못했습니다. 다시 시도해주세요.'));
             setLoading(null);
         }
     };
@@ -95,9 +98,9 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
 
     // Default quick purchase options (most popular packages)
     const quickOptions = [
-        { price: 25, cp: 275, label: 'Popular' },
-        { price: 50, cp: 575, label: 'Best Value' },
-        { price: 100, cp: 1250, label: 'Maximum' }
+        { price: 25, cp: 275, label: tx('Popular', '인기') },
+        { price: 50, cp: 575, label: tx('Best Value', '최고 효율') },
+        { price: 100, cp: 1250, label: tx('Maximum', '최대') }
     ];
 
     if (!isReturningCustomer) {
@@ -111,8 +114,8 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
                     <FontAwesomeIcon icon={faBolt} className="text-xl text-purple-400" />
                 </div>
                 <div>
-                    <h3 className="text-lg font-bold text-white">Quick Purchase</h3>
-                    <p className="text-xs text-white/60">One-click access to your favorites</p>
+                    <h3 className="text-lg font-bold text-white">{tx('Quick Purchase', '빠른 구매')}</h3>
+                    <p className="text-xs text-white/60">{tx('One-click access to your favorites', '즐겨찾는 패키지를 원클릭 구매')}</p>
                 </div>
             </div>
 
@@ -150,11 +153,11 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
                                 </div>
                                 {(eventBonusCP > 0 || firstTimeBonusCP > 0) && (
                                     <div className="text-xs text-green-400 mt-1">
-                                        +{(eventBonusCP + firstTimeBonusCP).toLocaleString()} bonus
+                                        +{(eventBonusCP + firstTimeBonusCP).toLocaleString()} {tx('bonus', '보너스')}
                                     </div>
                                 )}
                                 {loading === option.price && (
-                                    <div className="text-xs text-purple-400 mt-2">Loading...</div>
+                                    <div className="text-xs text-purple-400 mt-2">{tx('Loading...', '로딩 중...')}</div>
                                 )}
                             </div>
                         </button>

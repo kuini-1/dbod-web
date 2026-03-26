@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 
 type HealthStatus = {
   ok?: boolean;
@@ -12,6 +13,8 @@ type HealthStatus = {
 };
 
 export default function AdminPage() {
+  const { t, locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [status, setStatus] = useState<any>(null);
   const [statusError, setStatusError] = useState('');
   const [health, setHealth] = useState<HealthStatus | null>(null);
@@ -57,53 +60,53 @@ export default function AdminPage() {
 
   return (
     <AdminShell
-      title="Admin Overview"
-      subtitle="Monitor core services and jump into player tools fast."
+      title={t('adminOverview')}
+      subtitle={t('adminOverviewSubtitle')}
     >
       <div className="grid gap-6 lg:grid-cols-2">
-        <AdminCard title="Master Status" description="Database + core service health">
+        <AdminCard title={t('adminMasterStatus')} description={tx('Database + core service health', '데이터베이스 + 코어 서비스 상태')}>
           {statusError ? (
             <p className="text-sm text-red-300">{statusError}</p>
           ) : (
             <div className="space-y-2 text-sm text-white/80">
-              <p>Auth: {status?.auth ? 'Down' : 'Up'}</p>
-              <p>Character: {status?.char ? 'Down' : 'Up'}</p>
-              <p>Game: {status?.game ? 'Down' : 'Up'}</p>
-              <p>Query: {status?.query ? 'Down' : 'Up'}</p>
-              <p>Chat: {status?.chat ? 'Down' : 'Up'}</p>
+              <p>{tx('Auth', '인증')}: {status?.auth ? tx('Down', '오프라인') : tx('Up', '온라인')}</p>
+              <p>{tx('Character', '캐릭터')}: {status?.char ? tx('Down', '오프라인') : tx('Up', '온라인')}</p>
+              <p>{tx('Game', '게임')}: {status?.game ? tx('Down', '오프라인') : tx('Up', '온라인')}</p>
+              <p>{tx('Query', '쿼리')}: {status?.query ? tx('Down', '오프라인') : tx('Up', '온라인')}</p>
+              <p>{tx('Chat', '채팅')}: {status?.chat ? tx('Down', '오프라인') : tx('Up', '온라인')}</p>
             </div>
           )}
         </AdminCard>
 
-        <AdminCard title="Web Bridge" description="Live link from website to MasterServer">
+        <AdminCard title={t('adminWebBridge')} description={tx('Live link from website to MasterServer', '웹사이트와 마스터 서버 간 실시간 연결')}>
           {healthError ? (
             <p className="text-sm text-red-300">{healthError}</p>
           ) : (
             <div className="space-y-2 text-sm text-white/80">
-              <p>Bridge: {health?.ok ? 'Online' : 'Offline'}</p>
-              <p>Master Connected: {health?.connected ? 'Yes' : 'No'}</p>
+              <p>{tx('Bridge', '브리지')}: {health?.ok ? tx('Online', '온라인') : tx('Offline', '오프라인')}</p>
+              <p>{tx('Master Connected', '마스터 연결됨')}: {health?.connected ? tx('Yes', '예') : tx('No', '아니오')}</p>
               {health?.error ? <p className="text-red-300">{health.error}</p> : null}
             </div>
           )}
         </AdminCard>
       </div>
 
-      <AdminCard title="Quick Actions" description="Jump into detailed controls">
+      <AdminCard title={t('adminQuickActions')} description={tx('Jump into detailed controls', '상세 제어 화면으로 이동')}>
         <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <a className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10" href="/admin/players">
-            Player Controls
+            {tx('Player Controls', '플레이어 제어')}
           </a>
           <a className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10" href="/admin/buffs">
-            Buff Manager
+            {tx('Buff Manager', '버프 관리')}
           </a>
           <a className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10" href="/admin/items">
-            Item Tools
+            {tx('Item Tools', '아이템 도구')}
           </a>
           <a className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10" href="/admin/server">
-            Server Tools
+            {tx('Server Tools', '서버 도구')}
           </a>
           <a className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10" href="/admin/wps">
-            WPS Scripts
+            {t('adminWpsScripts')}
           </a>
         </div>
       </AdminCard>

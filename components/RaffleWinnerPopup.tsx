@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLocale } from './LocaleProvider';
 
 interface RaffleWinnerPopupProps {
     winner?: {
@@ -11,6 +12,8 @@ interface RaffleWinnerPopupProps {
 }
 
 export default function RaffleWinnerPopup({ winner }: RaffleWinnerPopupProps) {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [lastShownWinner, setLastShownWinner] = useState<string | null>(() => {
         if (typeof window === 'undefined') return null;
         return localStorage.getItem('lastShownRaffleWinner');
@@ -36,19 +39,19 @@ export default function RaffleWinnerPopup({ winner }: RaffleWinnerPopupProps) {
                         <button
                             onClick={handleClose}
                             className="text-white/60 hover:text-white transition-colors"
-                            aria-label="Close"
+                            aria-label={tx('Close', '닫기')}
                         >
                             <span className="text-xl">×</span>
                         </button>
                     </div>
 
                     <div className="space-y-4 text-center">
-                        <h2 className="text-2xl font-bold text-red-400">🎉 Raffle Winner! 🎉</h2>
-                        <h3 className="text-xl font-bold text-white">Congratulations!</h3>
+                        <h2 className="text-2xl font-bold text-red-400">🎉 {tx('Raffle Winner!', '래플 당첨자!')} 🎉</h2>
+                        <h3 className="text-xl font-bold text-white">{tx('Congratulations!', '축하합니다!')}</h3>
                         <div className="space-y-2 text-white/80">
-                            <p>Account ID: {winner.accountId}</p>
-                            <p>Won: {winner.amount} CP</p>
-                            <p>Time: {new Date(winner.timestamp).toLocaleString()}</p>
+                            <p>{tx('Account ID', '계정 ID')}: {winner.accountId}</p>
+                            <p>{tx('Won', '당첨 금액')}: {winner.amount} CP</p>
+                            <p>{tx('Time', '시간')}: {new Date(winner.timestamp).toLocaleString()}</p>
                         </div>
                     </div>
 
@@ -57,7 +60,7 @@ export default function RaffleWinnerPopup({ winner }: RaffleWinnerPopupProps) {
                             onClick={handleClose}
                             className="px-6 py-2 bg-red-400 hover:bg-red-500 rounded-lg font-bold transition-colors duration-300"
                         >
-                            Close
+                            {tx('Close', '닫기')}
                         </button>
                     </div>
                 </div>

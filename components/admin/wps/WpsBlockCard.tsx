@@ -12,6 +12,7 @@ import {
   addBlock,
 } from '@/lib/wps/scriptMutate';
 import { getBlockParams, getParamValidValues } from '@/lib/wps/paramSchema';
+import { useLocale } from '@/components/LocaleProvider';
 
 type WpsBlockCardProps = {
   script: WpsScript;
@@ -30,6 +31,8 @@ export function WpsBlockCard({
   index,
   block,
 }: WpsBlockCardProps) {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [paramKey, setParamKey] = useState('');
   const [paramValue, setParamValue] = useState('');
   const [showParamDropdown, setShowParamDropdown] = useState(false);
@@ -95,14 +98,14 @@ export function WpsBlockCard({
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="font-medium text-white/90">
-          {isAction ? 'Action' : 'Condition'}: {blockLabel(block.name)}
+          {isAction ? tx('Action', '액션') : tx('Condition', '조건')}: {blockLabel(block.name)}
         </span>
         <button
           type="button"
           onClick={handleRemove}
           className="rounded border border-red-500/40 bg-red-500/10 px-2 py-1 text-xs text-red-300 hover:bg-red-500/20"
         >
-          Remove
+          {tx('Remove', '삭제')}
         </button>
       </div>
 
@@ -168,7 +171,7 @@ export function WpsBlockCard({
           <div className="relative w-40">
             <input
               type="text"
-              placeholder="Param name"
+              placeholder={tx('Param name', '파라미터 이름')}
               value={paramKey}
               onChange={(e) => {
                 setParamKey(e.target.value);
@@ -197,8 +200,8 @@ export function WpsBlockCard({
                     >
                       <span className="font-medium">{p.name}</span>
                       {p.description && <span className="ml-2 text-xs text-white/60">({p.description})</span>}
-                      {p.type === 'number' && <span className="ml-2 text-xs text-blue-300">number</span>}
-                      {p.type === 'string' && <span className="ml-2 text-xs text-green-300">string</span>}
+                      {p.type === 'number' && <span className="ml-2 text-xs text-blue-300">{tx('number', '숫자')}</span>}
+                      {p.type === 'string' && <span className="ml-2 text-xs text-green-300">{tx('string', '문자열')}</span>}
                     </button>
                   ))}
               </div>
@@ -215,7 +218,7 @@ export function WpsBlockCard({
                       onChange={(e) => setParamValue(e.target.value)}
                       className="min-w-[120px] rounded border border-white/20 bg-black/40 px-2 py-1 text-sm text-white"
                     >
-                      <option value="">Select value...</option>
+                      <option value="">{tx('Select value...', '값 선택...')}</option>
                       {validValues.map((v) => (
                         <option key={v} value={v}>
                           {v}
@@ -229,7 +232,7 @@ export function WpsBlockCard({
                     type="text"
                     placeholder={(() => {
                       const param = getBlockParams(block.name).find((p) => p.name === paramKey);
-                      return param?.type === 'number' ? 'Number value' : 'String value';
+                      return param?.type === 'number' ? tx('Number value', '숫자 값') : tx('String value', '문자열 값');
                     })()}
                     value={paramValue}
                     onChange={(e) => setParamValue(e.target.value)}
@@ -243,7 +246,7 @@ export function WpsBlockCard({
           {!paramKey && (
             <input
               type="text"
-              placeholder="Value"
+              placeholder={tx('Value', '값')}
               value={paramValue}
               onChange={(e) => setParamValue(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddParam()}
@@ -256,13 +259,13 @@ export function WpsBlockCard({
             disabled={!paramKey.trim()}
             className="rounded border border-white/20 bg-white/10 px-2 py-1 text-sm hover:bg-white/20 disabled:opacity-50"
           >
-            Add param
+            {tx('Add param', '파라미터 추가')}
           </button>
         </div>
       </div>
 
       <div className="ml-4 mt-2 border-l-2 border-white/10 pl-3">
-        <p className="mb-2 text-xs text-white/50">Nested blocks (drop here)</p>
+        <p className="mb-2 text-xs text-white/50">{tx('Nested blocks (drop here)', '중첩 블록 (여기에 놓기)')}</p>
         <WpsBlockList
           script={script}
           setScript={setScript}

@@ -4,9 +4,17 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { API } from '../lib/api/client';
-import { local } from '../lib/utils/localize';
+import { useLocale } from './LocaleProvider';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 export function Navbar() {
+    const { locale, setLocale, t } = useLocale();
     const pathname = usePathname();
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -131,23 +139,32 @@ export function Navbar() {
                         </Link>
                         <div className="hidden md:flex space-x-6">
                             <Link href="/" className={`hover:text-red-400 transition-colors ${pathname === '/' ? 'text-red-400' : 'text-stone-300'}`}>
-                                {local.navItemHome}
+                                {t('navItemHome')}
                             </Link>
                             <Link href="/news" className={`hover:text-red-400 transition-colors ${pathname === '/news' ? 'text-red-400' : 'text-stone-300'}`}>
-                                {local.navItemNews}
+                                {t('navItemNews')}
                             </Link>
                             <Link href="/donate" className={`hover:text-red-400 transition-colors ${pathname === '/donate' ? 'text-red-400' : 'text-stone-300'} flex items-center gap-2`}>
-                                <span>{local.navItemDonation}</span>
+                                <span>{t('navItemDonation')}</span>
                                 {isLoggedIn && hasDonateNotification ? (
                                     <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
                                 ) : null}
                             </Link>
                             <Link href="/cashshop" className={`hover:text-red-400 transition-colors ${pathname === '/cashshop' ? 'text-red-400' : 'text-stone-300'}`}>
-                                {local.navItemCashshop}
+                                {t('navItemCashshop')}
                             </Link>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
+                        <Select value={locale} onValueChange={(value) => setLocale(value as 'en' | 'kr')}>
+                            <SelectTrigger aria-label={t('navItemLanguage')} className="h-8 w-[88px] border-stone-700 bg-stone-800 text-stone-200">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="en">EN</SelectItem>
+                                <SelectItem value="kr">KR</SelectItem>
+                            </SelectContent>
+                        </Select>
                         {isLoggedIn ? (
                             <span className="hidden lg:inline-flex text-xs font-mono text-red-200/90 bg-red-500/10 border border-red-500/20 px-2.5 py-1 rounded-md">
                                 KST (UTC+9) {formatKstClock(serverTimeMs)}
@@ -201,22 +218,22 @@ export function Navbar() {
                                     }}
                                     className="text-stone-300 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-2"
                                 >
-                                    <span>{local.navSubItemProfile}</span>
+                                    <span>{t('navSubItemProfile')}</span>
                                     {hasProfileNotification ? (
                                         <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
                                     ) : null}
                                 </button>
                                 <button onClick={handleLogout} className="text-stone-300 hover:text-red-400 transition-colors cursor-pointer">
-                                    {local.navSubItemLogout}
+                                    {t('navSubItemLogout')}
                                 </button>
                             </>
                         ) : (
                             <>
                                 <Link href="/login" className="text-stone-300 hover:text-red-400 transition-colors">
-                                    {local.navSubItemLogin}
+                                    {t('navSubItemLogin')}
                                 </Link>
                                 <Link href="/register" className="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors">
-                                    {local.navSubItemRegister}
+                                    {t('navSubItemRegister')}
                                 </Link>
                             </>
                         )}

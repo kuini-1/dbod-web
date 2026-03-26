@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGem, faFire, faStar, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface PackageCardProps {
     id: number;
@@ -33,6 +34,8 @@ export default function PackageCard({
 }: PackageCardProps) {
     const [hover, setHover] = useState(false);
     const router = useRouter();
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     
     // Calculate bonuses
     const eventBonusCP = bonusCP && bonusCP > 0 ? Math.round(baseCP * bonusCP) : 0;
@@ -76,7 +79,7 @@ export default function PackageCard({
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 mt-4">
                     <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black text-xs font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5 animate-pulse">
                         <FontAwesomeIcon icon={faStar} className="text-xs" />
-                        BEST VALUE
+                        {tx('BEST VALUE', '최고 효율')}
                     </div>
                 </div>
             )}
@@ -85,7 +88,7 @@ export default function PackageCard({
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 mt-4">
                     <div className="bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5">
                         <FontAwesomeIcon icon={faFire} className="text-xs" />
-                        POPULAR
+                        {tx('POPULAR', '인기')}
                     </div>
                 </div>
             )}
@@ -117,12 +120,12 @@ export default function PackageCard({
                             <span className='text-4xl font-bold text-white leading-tight'>
                                 {baseCP.toLocaleString()}
                             </span>
-                            <span className='text-xs text-white/60'>Base CP</span>
+                            <span className='text-xs text-white/60'>{tx('Base CP', '기본 CP')}</span>
                         </div>
                     </div>
                     <div className='text-right'>
                         <div className='text-3xl font-bold text-white mb-1'>${price}</div>
-                        <div className='text-xs text-white/60'>Price</div>
+                        <div className='text-xs text-white/60'>{tx('Price', '가격')}</div>
                         {cpPerDollar > 0 && (
                             <div className='text-xs text-green-400 font-semibold mt-1'>
                                 {cpPerDollar.toFixed(1)} CP/$
@@ -138,7 +141,7 @@ export default function PackageCard({
                             <div className='flex items-center justify-between text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2'>
                                 <div className='flex items-center gap-2'>
                                     <FontAwesomeIcon icon={faFire} className="text-xs" />
-                                    <span className="font-semibold">Event Bonus</span>
+                                    <span className="font-semibold">{tx('Event Bonus', '이벤트 보너스')}</span>
                                 </div>
                                 <span className='font-bold text-lg'>+{eventBonusCP.toLocaleString()} CP</span>
                             </div>
@@ -147,7 +150,7 @@ export default function PackageCard({
                             <div className='flex items-center justify-between text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2'>
                                 <div className='flex items-center gap-2'>
                                     <FontAwesomeIcon icon={faStar} className="text-xs" />
-                                    <span className="font-semibold">First Time Bonus</span>
+                                    <span className="font-semibold">{tx('First Time Bonus', '첫 결제 보너스')}</span>
                                 </div>
                                 <span className='font-bold text-lg'>+{firstTimeBonusCP.toLocaleString()} CP</span>
                             </div>
@@ -165,7 +168,7 @@ export default function PackageCard({
                 {/* Total CP - Prominent Display */}
                 <div className='pt-4 border-t-2 border-white/20 bg-gradient-to-r from-red-500/10 to-red-600/10 rounded-lg p-4'>
                     <div className='flex items-center justify-between mb-2'>
-                        <span className='text-sm text-white/70 font-semibold uppercase tracking-wide'>Total CP</span>
+                        <span className='text-sm text-white/70 font-semibold uppercase tracking-wide'>{tx('Total CP', '총 CP')}</span>
                         <span className={`text-3xl font-bold ${
                             isBestValue 
                                 ? 'text-yellow-400' 
@@ -177,7 +180,7 @@ export default function PackageCard({
                     {hasBonuses && (
                         <div className='flex items-center gap-1 text-xs text-green-400'>
                             <FontAwesomeIcon icon={faCheck} className="text-xs" />
-                            <span>Includes all bonuses</span>
+                            <span>{tx('Includes all bonuses', '모든 보너스 포함')}</span>
                         </div>
                     )}
                 </div>
@@ -256,7 +259,7 @@ export default function PackageCard({
                                     return;
                                 }
                                 const errorData = await response.json().catch(() => ({}));
-                                throw new Error(errorData.detail || 'Failed to create checkout session');
+                                throw new Error(errorData.detail || tx('Failed to create checkout session', '체크아웃 세션 생성 실패'));
                             }
                             
                             const data = await response.json();
@@ -265,11 +268,11 @@ export default function PackageCard({
                                 // Redirect to Stripe Checkout
                                 window.location.href = data.url;
                             } else {
-                                throw new Error('No checkout URL received');
+                                throw new Error(tx('No checkout URL received', '체크아웃 URL을 받지 못했습니다'));
                             }
                         } catch (error) {
                             console.error('Error creating checkout session:', error);
-                            alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
+                            alert(error instanceof Error ? error.message : tx('Failed to start checkout. Please try again.', '결제를 시작하지 못했습니다. 다시 시도해주세요.'));
                         }
                     }}
                     className={`w-full py-3.5 rounded-lg font-bold text-base text-white transition-all duration-300 transform cursor-pointer ${
@@ -283,7 +286,7 @@ export default function PackageCard({
                     }`}
                 >
                     <span className="flex items-center justify-center gap-2">
-                        Purchase Now
+                        {tx('Purchase Now', '지금 구매')}
                         <FontAwesomeIcon icon={faGem} className="text-sm" />
                     </span>
                 </button>

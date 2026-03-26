@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
+import { useLocale } from '@/components/LocaleProvider';
 import {
   Select,
   SelectContent,
@@ -33,6 +34,8 @@ function iconPath(name: string): string {
 }
 
 export default function AdminCashshopPage() {
+  const { locale } = useLocale();
+  const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
   const [rows, setRows] = useState<AdminCashshopItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -137,8 +140,8 @@ export default function AdminCashshopPage() {
 
   return (
     <AdminShell
-      title="Cashshop Manager"
-      subtitle="All cashshop rows from Supabase. Active rows use dwPriority=555."
+      title={tx('Cashshop Manager', '캐시샵 관리자')}
+      subtitle={tx('All cashshop rows from Supabase. Active rows use dwPriority=555.', 'Supabase의 캐시샵 행 관리. 활성 행은 dwPriority=555를 사용합니다.')}
     >
       <AdminCard title="Cashshop Rows" description="Status colors: green=active, gray=inactive">
         <div className="mb-3 flex items-center justify-between">

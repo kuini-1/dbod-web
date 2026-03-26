@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
@@ -10,10 +10,13 @@ import { faGem, faFire, faStar, faCheck, faShield, faClock } from '@fortawesome/
 import { API } from '@/lib/api/client';
 import { local } from '@/lib/utils/localize';
 import CheckoutForm from '@/components/CheckoutForm';
+import { useLocale } from '@/components/LocaleProvider';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_51KCOVJIBPTWZxVxDDDzV4yksWDwSOkuuK5Vp3mJXAwM52EnVm4DlFSkFCk3YwbnBlu18C39giejpSpZVpXA3uBWQ00Gm7pSbbm');
 
 export default function PaymentPage() {
+  const { locale } = useLocale();
+  const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
   const [clientSecret, setClientSecret] = useState("");
   const params = useParams();
   const router = useRouter();
@@ -98,7 +101,7 @@ export default function PaymentPage() {
       })
       .catch((error) => {
         console.error('Failed to create payment intent:', error);
-        setError('Failed to initialize payment. Please try again.');
+        setError(tx('Failed to initialize payment. Please try again.', '결제를 초기화하지 못했습니다. 다시 시도해주세요.'));
       });
 
     // Fetch donation data
@@ -118,7 +121,7 @@ export default function PaymentPage() {
         }
       }
     })();
-  }, [params.amount, user, loading, router]);
+  }, [params.amount, user, loading, router, locale, tx]);
 
   const appearance = {
     theme: 'night' as const,
@@ -167,12 +170,12 @@ export default function PaymentPage() {
                 <span className='text-4xl font-bold text-white leading-tight'>
                   {baseCP.toLocaleString()}
                 </span>
-                <span className='text-xs text-white/60'>Base CP</span>
+                <span className='text-xs text-white/60'>{tx('Base CP', '기본 CP')}</span>
               </div>
             </div>
             <div className='text-right'>
               <div className='text-3xl font-bold text-white mb-1'>${price}</div>
-              <div className='text-xs text-white/60'>Price</div>
+              <div className='text-xs text-white/60'>{tx('Price', '가격')}</div>
             </div>
           </div>
 
@@ -183,7 +186,7 @@ export default function PaymentPage() {
                 <div className='flex items-center justify-between text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2'>
                   <div className='flex items-center gap-2'>
                     <FontAwesomeIcon icon={faFire} className="text-xs" />
-                    <span className="font-semibold">Event Bonus</span>
+                    <span className="font-semibold">{tx('Event Bonus', '이벤트 보너스')}</span>
                   </div>
                   <span className='font-bold text-lg'>+{eventBonusCP.toLocaleString()} CP</span>
                 </div>
@@ -192,7 +195,7 @@ export default function PaymentPage() {
                 <div className='flex items-center justify-between text-green-400 text-sm bg-green-500/10 rounded-lg px-3 py-2'>
                   <div className='flex items-center gap-2'>
                     <FontAwesomeIcon icon={faStar} className="text-xs" />
-                    <span className="font-semibold">First Time Bonus</span>
+                    <span className="font-semibold">{tx('First Time Bonus', '첫 결제 보너스')}</span>
                   </div>
                   <span className='font-bold text-lg'>+{firstTimeBonusCP.toLocaleString()} CP</span>
                 </div>
@@ -200,7 +203,7 @@ export default function PaymentPage() {
               {bonusPercentage > 0 && (
                 <div className='text-center pt-1'>
                   <span className='text-xs text-green-400 font-bold bg-green-500/20 px-2 py-1 rounded-full'>
-                    +{bonusPercentage}% BONUS!
+                    +{bonusPercentage}% {tx('BONUS!', '보너스!')}
                   </span>
                 </div>
               )}
@@ -210,7 +213,7 @@ export default function PaymentPage() {
           {/* Total CP - Prominent Display */}
           <div className='pt-4 border-t-2 border-white/20 bg-gradient-to-r from-red-500/10 to-red-600/10 rounded-lg p-4'>
             <div className='flex items-center justify-between mb-2'>
-              <span className='text-sm text-white/70 font-semibold uppercase tracking-wide'>Total CP</span>
+              <span className='text-sm text-white/70 font-semibold uppercase tracking-wide'>{tx('Total CP', '총 CP')}</span>
               <span className='text-3xl font-bold text-red-400'>
                 {totalCP.toLocaleString()}
               </span>
@@ -218,7 +221,7 @@ export default function PaymentPage() {
             {hasBonuses && (
               <div className='flex items-center gap-1 text-xs text-green-400'>
                 <FontAwesomeIcon icon={faCheck} className="text-xs" />
-                <span>Includes all bonuses</span>
+                <span>{tx('Includes all bonuses', '모든 보너스 포함')}</span>
               </div>
             )}
           </div>
@@ -232,7 +235,7 @@ export default function PaymentPage() {
       <div className="text-white bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-500 mx-auto mb-4"></div>
-          <div className="text-xl">Loading...</div>
+          <div className="text-xl">{local.loading}</div>
         </div>
       </div>
     );
@@ -247,7 +250,7 @@ export default function PaymentPage() {
             onClick={() => router.push('/donate')}
             className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-lg font-bold text-white transition-all duration-300 cursor-pointer"
           >
-            Return to Donation Page
+            {tx('Return to Donation Page', '후원 페이지로 돌아가기')}
           </button>
         </div>
       </div>
@@ -268,7 +271,7 @@ export default function PaymentPage() {
           <div className="relative inline-block">
             {/* Main Title */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold bg-gradient-to-r from-red-400 via-red-500 to-red-600 bg-clip-text text-transparent mb-4 drop-shadow-2xl">
-              Payment
+              {local.payment}
             </h1>
             
             {/* Underline accent */}
@@ -281,7 +284,7 @@ export default function PaymentPage() {
             
             {/* Subtitle */}
             <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto font-light">
-              Complete your purchase to receive your Cash Points instantly
+              {local.paymentDescription}
             </p>
           </div>
         </div>
@@ -305,10 +308,10 @@ export default function PaymentPage() {
                 <div className="w-full bg-gradient-to-br from-stone-800/95 via-stone-850/95 to-stone-900/95 backdrop-blur-md rounded-2xl p-5 md:p-6 border-2 border-white/10 shadow-2xl">
                   <div className="mb-5 text-center">
                     <h2 className="text-xl md:text-2xl font-bold mb-2 bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-                      Payment Details
+                      {local.paymentDetails}
                     </h2>
                     <p className="text-white/60 text-sm">
-                      Enter your card information to complete the purchase
+                      {local.enterCardInfo}
                     </p>
                   </div>
                   <div className="bg-stone-700/50 rounded-xl p-5 md:p-6 shadow-xl border border-white/10">
@@ -320,11 +323,11 @@ export default function PaymentPage() {
                 <div className="flex flex-wrap justify-center gap-4 text-white/60 text-xs md:text-sm">
                   <div className="flex items-center gap-2">
                     <FontAwesomeIcon icon={faShield} className="text-green-400" />
-                    <span>Secure Payment Processing</span>
+                    <span>{tx('Secure Payment Processing', '안전한 결제 처리')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <FontAwesomeIcon icon={faClock} className="text-green-400" />
-                    <span>Instant CP Delivery</span>
+                    <span>{tx('Instant CP Delivery', '즉시 CP 지급')}</span>
                   </div>
                 </div>
               </div>

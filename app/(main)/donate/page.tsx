@@ -16,6 +16,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface DonationTier {
     id: number;
@@ -72,6 +73,8 @@ const CURRENCIES = [
 ] as const;
 
 export default function DonatePage() {
+    const { locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const [donationData, setDonationData] = useState<any>(null);
     const [donationTiers, setDonationTiers] = useState<DonationTier[]>([]);
     const [characters, setCharacters] = useState<CharacterOption[]>([]);
@@ -209,18 +212,18 @@ export default function DonatePage() {
                         
                         {/* Subtitle */}
                         <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto font-light">
-                            Get Cash Points instantly and unlock exclusive rewards
+                            {tx('Get Cash Points instantly and unlock exclusive rewards', '즉시 캐시 포인트를 받고 특별 보상을 잠금 해제하세요')}
                         </p>
                         <p className="mt-3 text-sm md:text-base text-red-200/90">
-                            Current Cash Points: <span className="font-semibold text-red-300">{Number(donationData?.mallpoints ?? 0).toLocaleString()}</span>
+                            {tx('Current Cash Points', '현재 캐시 포인트')}: <span className="font-semibold text-red-300">{Number(donationData?.mallpoints ?? 0).toLocaleString()}</span>
                         </p>
 
                         {/* Currency selector for regional payment methods */}
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-                            <span className="text-white/70 text-sm">Payment currency:</span>
+                            <span className="text-white/70 text-sm">{tx('Payment currency:', '결제 통화:')}</span>
                             <Select value={currency} onValueChange={setCurrency}>
                                 <SelectTrigger className="w-[280px] sm:w-[320px]">
-                                    <SelectValue placeholder="Select currency" />
+                                    <SelectValue placeholder={tx('Select currency', '통화 선택')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {CURRENCIES.map((c) => (
