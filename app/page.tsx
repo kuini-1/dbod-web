@@ -77,9 +77,9 @@ export default function HomePage() {
 
     return (
         <div className="text-white min-h-screen overflow-x-hidden relative bg-[#0c0a09]">
-            {/* MMORPG-style gradient: dark world with subtle energy tint */}
-            <div className="fixed inset-0 bg-gradient-to-b from-[#0c0a09] via-[#1c1917] to-[#0c0a09] -z-10" />
-            <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(239,68,68,0.03)_0%,_transparent_50%)] -z-10" />
+            <div className="fixed inset-0 bg-gradient-to-b from-[#070606] via-[#0f0c0a] to-[#060505] -z-10" />
+            <div className="fixed inset-0 bg-[radial-gradient(circle_at_top,_rgba(239,68,68,0.08)_0%,_transparent_52%)] -z-10" />
+            <div className="fixed inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(185,28,28,0.08)_0%,_transparent_48%)] -z-10" />
             
             <LandingHero />
             <CoreFeaturesSection />

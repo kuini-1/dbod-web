@@ -34,48 +34,50 @@ interface ServerStatusSectionProps {
 export function ServerStatusSection({ status }: ServerStatusSectionProps) {
     const { locale } = useLocale();
     const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+    const panelClass = 'rounded-xl border border-red-500/25 bg-stone-900/80 backdrop-blur-md shadow-[0_0_24px_rgba(239,68,68,0.08)]';
 
     return (
-        <section className="w-full px-4 py-16 flex flex-col items-center space-y-8">
+        <section className="relative w-full px-4 py-20 md:py-24 flex flex-col items-center space-y-8 overflow-hidden">
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#0f0c0a] via-[#140f0c] to-[#0b0908]" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
             <div className='flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-5'>
-                <h1 className='text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-300 via-red-400 to-red-400'>
+                <h1 className='text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-200 via-red-400 to-red-300 drop-shadow-[0_0_24px_rgba(239,68,68,0.28)]'>
                     {local.serverStatus}
                 </h1>
             </div>
-            <div className="w-full max-w-4xl">
-                {/* Player Count and Server Status - MMORPG UI style */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="bg-stone-900/80 rounded-lg p-6 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]">
+            <div className="w-full max-w-5xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div className={`${panelClass} p-6`}>
                         <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold text-red-100/90">{local.playerCount}</span>
-                            <span className={`text-xl font-bold ${status.player_count === 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                            <span className="text-lg font-semibold text-red-100/90 uppercase tracking-wide">{local.playerCount}</span>
+                            <span className={`text-2xl font-black ${status.player_count === 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                                 {status.player_count || 0}
                             </span>
                         </div>
                     </div>
-                    <div className="bg-stone-900/80 rounded-lg p-6 border border-red-500/20 shadow-[0_0_20px_rgba(239,68,68,0.05)]">
+                    <div className={`${panelClass} p-6`}>
                         <div className="flex justify-between items-center">
-                            <span className="text-lg font-semibold text-red-100/90">{local.auth}</span>
-                            <span className={`text-xl font-bold ${Number(status.auth) === 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            <span className="text-lg font-semibold text-red-100/90 uppercase tracking-wide">{local.auth}</span>
+                            <span className={`text-2xl font-black ${Number(status.auth) === 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                 {Number(status.auth) === 0 ? local.online : local.offline}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* All Channels */}
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold text-red-100/90 mb-4">{tx('Channels', '채널')}</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
                         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((chNum) => {
                             const chKey = `ch${chNum}` as keyof typeof status.channels;
                             const chStatus = status.channels?.[chKey];
                             const isOnline = Number(chStatus) === 0;
                             return (
-                                <div key={chNum} className="bg-stone-900/80 rounded-lg p-4 border border-red-500/20">
+                                <div key={chNum} className={`${panelClass} p-4`}>
                                     <div className="flex flex-col items-center space-y-2">
                                         <span className="text-sm font-semibold text-red-100/70">{tx('Channel', '채널')} {chNum}</span>
-                                        <span className={`text-lg font-bold ${isOnline ? 'text-emerald-400' : 'text-red-400'}`}>
+                                        <span className={`text-lg font-black ${isOnline ? 'text-emerald-400' : 'text-red-400'}`}>
                                             {isOnline ? local.online : local.offline}
                                         </span>
                                     </div>
@@ -85,31 +87,30 @@ export function ServerStatusSection({ status }: ServerStatusSectionProps) {
                     </div>
                 </div>
 
-                {/* Bonuses Section */}
                 {status.bonuses && (
                     <div className="mb-6">
                         <h2 className="text-2xl font-bold text-red-100/90 mb-4">{tx('Active Bonuses', '활성 보너스')}</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {(status.bonuses.soloExpBonus ?? 0) > 0 && (
-                                <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl p-4 backdrop-blur-sm border border-green-500/30">
+                                <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl p-4 backdrop-blur-sm border border-green-500/30 shadow-[0_0_20px_rgba(34,197,94,0.18)]">
                                     <div className="text-sm text-green-400 font-semibold mb-1">{tx('Solo EXP', '솔로 EXP')}</div>
                                     <div className="text-2xl font-bold text-green-300">+{status.bonuses.soloExpBonus}%</div>
                                 </div>
                             )}
                             {(status.bonuses.partyExpBonus ?? 0) > 0 && (
-                                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl p-4 backdrop-blur-sm border border-blue-500/30">
+                                <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl p-4 backdrop-blur-sm border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.16)]">
                                     <div className="text-sm text-blue-400 font-semibold mb-1">{tx('Party EXP', '파티 EXP')}</div>
                                     <div className="text-2xl font-bold text-blue-300">+{status.bonuses.partyExpBonus}%</div>
                                 </div>
                             )}
                             {(status.bonuses.questExpBonus ?? 0) > 0 && (
-                                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl p-4 backdrop-blur-sm border border-purple-500/30">
+                                <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl p-4 backdrop-blur-sm border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.18)]">
                                     <div className="text-sm text-purple-400 font-semibold mb-1">{tx('Quest EXP', '퀘스트 EXP')}</div>
                                     <div className="text-2xl font-bold text-purple-300">+{status.bonuses.questExpBonus}%</div>
                                 </div>
                             )}
                             {(status.bonuses.craftExpBonus ?? 0) > 0 && (
-                                <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl p-4 backdrop-blur-sm border border-yellow-500/30">
+                                <div className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl p-4 backdrop-blur-sm border border-yellow-500/30 shadow-[0_0_20px_rgba(234,179,8,0.18)]">
                                     <div className="text-sm text-yellow-400 font-semibold mb-1">{tx('Craft EXP', '제작 EXP')}</div>
                                     <div className="text-2xl font-bold text-yellow-300">+{status.bonuses.craftExpBonus}%</div>
                                 </div>
@@ -145,7 +146,6 @@ export function ServerStatusSection({ status }: ServerStatusSectionProps) {
                     </div>
                 )}
 
-                {/* Channel Bonuses */}
                 {status.channelBonuses && status.channelBonuses.length > 0 && (
                     <div>
                         <h2 className="text-2xl font-bold text-red-100/90 mb-4">{tx('Channel Bonuses', '채널 보너스')}</h2>
@@ -159,7 +159,7 @@ export function ServerStatusSection({ status }: ServerStatusSectionProps) {
                                 if (!hasBonuses) return null;
 
                                 return (
-                                    <div key={bonus.channelId} className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-lg p-4 border border-red-500/30">
+                                    <div key={bonus.channelId} className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-lg p-4 border border-red-500/30 shadow-[0_0_22px_rgba(239,68,68,0.14)]">
                                         <div className="text-sm text-red-300 font-semibold mb-3">{tx('Channel', '채널')} {bonus.channelId}</div>
                                         <div className="space-y-2">
                                             {(bonus.maxLpPercent ?? 0) > 0 && (
