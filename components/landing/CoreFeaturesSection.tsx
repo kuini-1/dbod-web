@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { Users, Swords, Zap, Sparkles, Hammer } from 'lucide-react';
 import { local } from '@/lib/utils/localize';
 
@@ -58,46 +57,25 @@ export function CoreFeaturesSection() {
         <section className="relative w-full py-24 md:py-32 px-4 overflow-hidden">
             {/* Section header */}
             <div className="max-w-4xl mx-auto text-center mb-16 md:mb-24">
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="text-red-400 font-semibold text-sm uppercase tracking-[0.2em] mb-4"
-                >
+                <p className="text-red-400 font-semibold text-sm uppercase tracking-[0.2em] mb-4">
                     Why Play Here
-                </motion.p>
-                <motion.h2
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.1 }}
-                    className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight"
-                >
+                </p>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight">
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-200 via-red-400 to-red-200">
                         {local.coreFeatures}
                     </span>
-                </motion.h2>
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.2 }}
-                    className="mt-6 text-lg md:text-xl text-red-100/70 max-w-2xl mx-auto"
-                >
+                </h2>
+                <p className="mt-6 text-lg md:text-xl text-red-100/70 max-w-2xl mx-auto">
                     Major features that set our server apart
-                </motion.p>
+                </p>
             </div>
 
             {/* Feature cards - modern bento-style layout */}
             <div className="max-w-6xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {features.map((feature, index) => (
-                        <motion.div
+                        <div
                             key={index}
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true, margin: "-50px" }}
-                            transition={{ delay: index * 0.08, duration: 0.5 }}
                             className={`group relative rounded-2xl p-8 md:p-10 bg-gradient-to-br ${feature.gradient} 
                                 backdrop-blur-xl border ${feature.borderColor} 
                                 hover:shadow-[0_0_50px_rgba(239,68,68,0.2)]
@@ -123,17 +101,12 @@ export function CoreFeaturesSection() {
                             {/* Subtle glow on hover */}
                             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-red-400/5 to-transparent 
                                 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
 
                 {/* CTA */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="mt-16 text-center"
-                >
+                <div className="mt-16 text-center">
                     <Link
                         href="/register"
                         className="inline-flex items-center gap-2 px-10 py-4 rounded-xl font-bold text-lg
@@ -144,7 +117,7 @@ export function CoreFeaturesSection() {
                     >
                         {local.homeRegister}
                     </Link>
-                </motion.div>
+                </div>
             </div>
         </section>
     );
