@@ -8,8 +8,7 @@ import popup_banner_items from '../models/popup_banner_items';
 import { packages } from '../models/packages';
 import items from '../models/items';
 import { donations } from '../models/donations';
-import { daily_rewards, daily_reward_claims } from '../models/daily_rewards';
-import { daily_logins } from '../models/daily_logins';
+import { daily_rewards, daily_reward_claims, daily_checkin_passes } from '../models/daily_rewards';
 import cashshop_storage from '../models/cashshop_storage';
 import { server_status } from '../models/server_status';
 import { characters } from '../models/characters';
@@ -106,11 +105,11 @@ export async function syncAll() {
         syncModelAdditiveOnly(donations),
         syncModelAdditiveOnly(daily_rewards),
         syncModelAdditiveOnly(daily_reward_claims),
-        syncModelAdditiveOnly(daily_logins),
+        syncModelAdditiveOnly(daily_checkin_passes),
         syncModelAdditiveOnly(cashshop_storage),
         syncModelAdditiveOnly(server_status),
     ]);
-    console.log('Items, donations, daily rewards, daily logins, cashshop storage, server status synced');
+    console.log('Items, donations, daily rewards, daily checkin pass, cashshop storage, server status synced');
 
     await syncModelAdditiveOnly(Raffle);
     await syncModelAdditiveOnly(RaffleEntry);

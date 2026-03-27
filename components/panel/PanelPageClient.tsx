@@ -9,6 +9,7 @@ import {
     faUser,
     faUsers,
     faGift,
+    faCalendarCheck,
     faKey,
     faLock,
     faCoins,
@@ -137,6 +138,18 @@ const UserInfo = ({ username, email, cp, onChangePassword }: { username: string;
                         </div>
                     </button>
                 </Link>
+                <button
+                    onClick={() => window.dispatchEvent(new Event('open-daily-login-modal'))}
+                    className='flex-1 w-full p-4 bg-stone-800/50 hover:bg-stone-700/50 border border-white/5 hover:border-red-500/50 rounded-xl transition-all duration-300 group cursor-pointer'
+                >
+                    <div className='flex items-center justify-center space-x-3'>
+                        <FontAwesomeIcon
+                            icon={faCalendarCheck}
+                            className='text-red-400 group-hover:scale-110 transition-transform duration-300 text-xl'
+                        />
+                        <span className='font-bold text-lg'>{tx('Daily Login', '출석 보상')}</span>
+                    </div>
+                </button>
             </div>
         </div>
     );

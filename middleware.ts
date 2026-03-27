@@ -4,9 +4,9 @@ import jwt from 'jsonwebtoken';
 import { JWT_TOKEN } from './lib/auth/jwt';
 
 // Protected routes that require authentication
-// Note: /panel handles its own auth check in the component
+// Note: /panel and /daily-login handle auth check in their components via /api/private.
+// Keeping them out of middleware avoids false redirects when cookie/header states differ.
 const protectedRoutes = [
-    '/daily-login', 
     '/raffle'
 ];
 
@@ -17,10 +17,10 @@ const protectedApiRoutes = [
     '/api/account',
     // Note: these endpoints perform their own auth via `getUserFromRequest()`.
     // Keeping them out of middleware avoids false 401s when cookies/headers differ.
+    // '/api/daily-rewards',
     // '/api/characters',
     // '/api/my-profile',
     // '/api/donation-log',
-    '/api/daily-rewards',
     '/api/raffle/enter'
 ];
 // Note: /api/donate and /api/donation-info are public but return user-specific data if authenticated

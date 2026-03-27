@@ -5,18 +5,26 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { API } from '@/lib/api/client';
 import { local } from '@/lib/utils/localize';
-import CharacterSelect from '@/components/CharacterSelect';
 import { WarningToast, SuccessToast } from '@/lib/utils/toasts';
 import toast from 'react-hot-toast';
 import { useLocale } from '@/components/LocaleProvider';
+import DailyLoginAutoModal from '@/components/DailyLoginAutoModal';
 
 interface DailyReward {
     date: number;
     itemId: number;
     amount: number;
+    name: string;
+    iconUrl: string | null;
     claimed: boolean;
     available: boolean;
-    isBonus?: boolean;
+    isRepeat?: boolean;
+}
+
+interface CheckinPassState {
+    isActive: boolean;
+    price: number;
+    expiresAt: string | null;
 }
 
 export default function DailyLoginPage() {
@@ -26,7 +34,10 @@ export default function DailyLoginPage() {
     const [rewards, setRewards] = useState<DailyReward[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedCharacter, setSelectedCharacter] = useState<any>(null);
+    const [mallpoints, setMallpoints] = useState(0);
+    const [pass, setPass] = useState<CheckinPassState>({ isActive: false, price: 150, expiresAt: null });
+    const [buyingPass, setBuyingPass] = useState(false);
+    const [manualModalOpen, setManualModalOpen] = useState(true);
     const [timeUntilReset, setTimeUntilReset] = useState<{
         days: number;
         hours: number;
@@ -44,12 +55,14 @@ export default function DailyLoginPage() {
                     router.push('/login');
                     return;
                 }
+                setMallpoints(Number(res.data.mallpoints ?? 0));
 
                 const response = await API.get('/daily-rewards');
                 
                 if (response.status === 200) {
                     setRewards(response.data.data);
                     setTimeUntilReset(response.data.timeUntilReset);
+                    setPass(response.data.pass ?? { isActive: false, price: 150, expiresAt: null });
                 } else {
                     setError(response.data.message || tx('Failed to fetch rewards', '보상을 불러오지 못했습니다'));
                 }
@@ -68,6 +81,9 @@ export default function DailyLoginPage() {
         const timer = setInterval(() => {
             setTimeUntilReset(prev => {
                 let { days, hours, minutes, seconds } = prev;
+                if (days <= 0 && hours <= 0 && minutes <= 0 && seconds <= 0) {
+                    return prev;
+                }
                 seconds--;
                 
                 if (seconds < 0) {
@@ -102,25 +118,18 @@ export default function DailyLoginPage() {
     }, [timeUntilReset, locale, tx]);
 
     const handleClaim = async (date: number) => {
-        if (!selectedCharacter) {
-            WarningToast.fire(tx('Please select a character first', '먼저 캐릭터를 선택하세요'));
-            return;
-        }
-
         try {
-            const requestData = {
-                date: Number(date),
-                characterName: String(selectedCharacter.CharName),
-                CharID: Number(selectedCharacter.CharID)
-            };
-
-            const response = await API.post("/daily-rewards/claim", requestData);
+            const response = await API.post("/daily-rewards/claim", { date: Number(date) });
 
             if (response.status === 200) {
-                SuccessToast.fire(tx('Reward claimed successfully!', '보상을 성공적으로 수령했습니다!'));
+                const amountText = Number(response.data?.amount ?? 0);
+                SuccessToast.fire(tx(`Reward claimed! x${amountText} sent to cashshop storage.`, `보상 수령 완료! x${amountText} 보상이 캐시샵 보관함으로 전송되었습니다.`));
                 const rewardsResponse = await API.get("/daily-rewards");
-                setRewards(rewardsResponse.data.data);
-                setTimeUntilReset(rewardsResponse.data.timeUntilReset);
+                if (rewardsResponse.status === 200) {
+                    setRewards(rewardsResponse.data.data);
+                    setTimeUntilReset(rewardsResponse.data.timeUntilReset);
+                    setPass(rewardsResponse.data.pass ?? { isActive: false, price: 150, expiresAt: null });
+                }
             } else {
                 WarningToast.fire(response.data.message || tx('Failed to claim reward', '보상 수령에 실패했습니다'));
             }
@@ -129,6 +138,40 @@ export default function DailyLoginPage() {
             WarningToast.fire(error.response?.data?.message || tx('Failed to claim reward', '보상 수령에 실패했습니다'));
         }
     };
+
+    const handleBuyPass = async () => {
+        try {
+            setBuyingPass(true);
+            const response = await API.post('/daily-rewards/pass/purchase');
+            if (response.status === 200) {
+                SuccessToast.fire(tx('Check-in Pass activated!', '체크인 패스가 활성화되었습니다!'));
+                setMallpoints(Number(response.data.mallpoints ?? mallpoints));
+                const rewardsResponse = await API.get('/daily-rewards');
+                if (rewardsResponse.status === 200) {
+                    setRewards(rewardsResponse.data.data);
+                    setTimeUntilReset(rewardsResponse.data.timeUntilReset);
+                    setPass(rewardsResponse.data.pass ?? { isActive: false, price: 150, expiresAt: null });
+                }
+                return;
+            }
+            WarningToast.fire(response.data.message || tx('Failed to purchase pass', '패스 구매에 실패했습니다'));
+        } catch (error: any) {
+            console.error('Error purchasing pass:', error);
+            WarningToast.fire(error?.response?.data?.message || tx('Failed to purchase pass', '패스 구매에 실패했습니다'));
+        } finally {
+            setBuyingPass(false);
+        }
+    };
+
+    const formatExpiry = (isoString: string | null) => {
+        if (!isoString) return tx('Not active', '비활성');
+        const date = new Date(isoString);
+        return Number.isNaN(date.getTime())
+            ? tx('Not active', '비활성')
+            : date.toLocaleString();
+    };
+
+    const repeatReward = rewards.find((reward) => reward.date === 25) || rewards.find((reward) => reward.isRepeat);
 
     if (loading) {
         return <div className="flex justify-center items-center min-h-screen bg-stone-900">
@@ -151,92 +194,34 @@ export default function DailyLoginPage() {
     }
 
     return (
-        <div className="text-white bg-stone-900 min-h-screen duration-500 overflow-x-hidden px-4 py-8">
-            <div className="max-w-7xl mx-auto">
-                <div className="bg-stone-800/50 rounded-xl p-6 md:p-10 border border-white/5">
-                    <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-red-400 to-red-600 bg-clip-text text-transparent">
-                        {local.dailyLoginRewards}
-                    </h1>
-
-                    <div className="text-center mb-8">
-                        <div className="text-lg text-white/60">
-                            {local.nextReset} {timeUntilReset.days}d {timeUntilReset.hours}h {timeUntilReset.minutes}m {timeUntilReset.seconds}s
-                        </div>
-                    </div>
-
-                    <div className="mb-8">
-                        <CharacterSelect
-                            onSelect={setSelectedCharacter}
-                            selectedCharacter={selectedCharacter}
-                            title={local.selectCharacterTitle}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-4">
-                        {Array.from({ length: 29 }, (_, i) => {
-                            const date = i + 1;
-                            const reward = rewards.find(r => r.date === date);
-                            const isSpecialDay = date % 7 === 0 || date === 28;
-                            const isBonusDay = date === 29;
-                            
-                            return (
-                                <div key={date} className="relative">
-                                    <div 
-                                        className={`relative aspect-square rounded-lg overflow-hidden ${
-                                            isBonusDay
-                                                ? 'bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50'
-                                                : isSpecialDay 
-                                                    ? 'bg-gradient-to-br from-red-500/20 to-red-600/20 border-2 border-red-500/50' 
-                                                    : 'bg-stone-800/50 border border-white/5'
-                                        }`}
-                                    >
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
-                                            <span className="text-lg font-bold mb-2">
-                                                {isBonusDay ? local.bonus : `${local.day} ${date}`}
-                                            </span>
-
-                                            <Image 
-                                                src="/event icons/i_hls_aoto_lp_s.png"
-                                                alt="Reward" 
-                                                width={48}
-                                                height={48}
-                                                className="mb-2"
-                                            />
-
-                                            <span className={`text-sm font-bold ${isBonusDay ? 'text-yellow-400' : 'text-red-400'}`}>
-                                                {reward?.amount || 0}
-                                            </span>
-
-                                            {reward && (
-                                                <div className="mt-2">
-                                                    {reward.claimed ? (
-                                                        <span className="text-xs text-green-400">{local.claimed}</span>
-                                                    ) : reward.available ? (
-                                                        <button
-                                                            onClick={() => handleClaim(date)}
-                                                            className={`text-xs px-3 py-1 rounded-full transition-colors cursor-pointer ${
-                                                                isBonusDay 
-                                                                    ? 'bg-yellow-500 hover:bg-yellow-600' 
-                                                                    : 'bg-red-500 hover:bg-red-600'
-                                                            }`}
-                                                        >
-                                                            {local.claim}
-                                                        </button>
-                                                    ) : (
-                                                        <span className="text-xs text-white/40">
-                                                            {local.notAvailable}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+        <div className="text-white min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900">
+            {!manualModalOpen ? (
+                <div className="min-h-screen flex items-center justify-center p-6">
+                    <button
+                        onClick={() => setManualModalOpen(true)}
+                        className="px-6 py-3 rounded-lg font-bold text-base text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 cursor-pointer border border-red-300/45 shadow-[0_6px_14px_rgba(239,68,68,0.25)]"
+                    >
+                        {tx('Open Daily Login', '출석 보상 열기')}
+                    </button>
                 </div>
-            </div>
+            ) : null}
+            <DailyLoginAutoModal
+                isOpen={manualModalOpen}
+                onClose={() => setManualModalOpen(false)}
+                rewards={rewards}
+                resetDays={timeUntilReset.days}
+                claimedDay={0}
+                claimedAmount={0}
+                showPurchaseButton
+                passIsActive={pass.isActive}
+                passPrice={pass.price}
+                mallpoints={mallpoints}
+                buyingPass={buyingPass}
+                onPurchase={handleBuyPass}
+                purchaseButtonText={tx('Purchase Now', '지금 구매')}
+                passActiveText={tx('Pass Active', '패스 활성')}
+                purchasingText={tx('Purchasing...', '구매 중...')}
+            />
         </div>
     );
 }

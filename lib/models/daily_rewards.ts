@@ -3,7 +3,8 @@ import { dbod_acc } from '../database/connection';
 
 export interface DailyRewardAttributes {
     id: number;
-    date: number;
+    date?: number;
+    dayNumber: number;
     itemId: number;
     amount: number;
 }
@@ -12,15 +13,32 @@ export interface DailyRewardClaimAttributes {
     id: number;
     AccountID: number;
     rewardId: number;
+    claimDayNumber: number;
+    claimYear: number;
+    claimMonth: number;
+    claimDate: Date;
     claimedAt: Date;
+}
+
+export interface DailyCheckinPassAttributes {
+    id: number;
+    AccountID: number;
+    purchaseYear: number;
+    purchaseMonth: number;
+    activeFrom: Date;
+    activeUntil: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export type DailyRewardCreationAttributes = Optional<DailyRewardAttributes, 'id'>;
 export type DailyRewardClaimCreationAttributes = Optional<DailyRewardClaimAttributes, 'id'>;
+export type DailyCheckinPassCreationAttributes = Optional<DailyCheckinPassAttributes, 'id'>;
 
 class DailyReward extends Model<DailyRewardAttributes, DailyRewardCreationAttributes> implements DailyRewardAttributes {
     public id!: number;
-    public date!: number;
+    public date?: number;
+    public dayNumber!: number;
     public itemId!: number;
     public amount!: number;
 }
@@ -29,7 +47,22 @@ class DailyRewardClaim extends Model<DailyRewardClaimAttributes, DailyRewardClai
     public id!: number;
     public AccountID!: number;
     public rewardId!: number;
+    public claimDayNumber!: number;
+    public claimYear!: number;
+    public claimMonth!: number;
+    public claimDate!: Date;
     public claimedAt!: Date;
+}
+
+class DailyCheckinPass extends Model<DailyCheckinPassAttributes, DailyCheckinPassCreationAttributes> implements DailyCheckinPassAttributes {
+    public id!: number;
+    public AccountID!: number;
+    public purchaseYear!: number;
+    public purchaseMonth!: number;
+    public activeFrom!: Date;
+    public activeUntil!: Date;
+    public createdAt?: Date;
+    public updatedAt?: Date;
 }
 
 const daily_rewards = dbod_acc.define<DailyReward>('daily_rewards', {
@@ -38,9 +71,10 @@ const daily_rewards = dbod_acc.define<DailyReward>('daily_rewards', {
         primaryKey: true,
         autoIncrement: true
     },
-    date: {
+    dayNumber: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        defaultValue: 0
     },
     itemId: {
         type: DataTypes.INTEGER,
@@ -69,6 +103,26 @@ const daily_reward_claims = dbod_acc.define<DailyRewardClaim>('daily_reward_clai
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    claimDayNumber: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    claimYear: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    claimMonth: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+    },
+    claimDate: {
+        type: DataTypes.DATEONLY,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    },
     claimedAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -79,4 +133,36 @@ const daily_reward_claims = dbod_acc.define<DailyRewardClaim>('daily_reward_clai
     tableName: 'daily_reward_claims'
 });
 
-export { daily_rewards, daily_reward_claims };
+const daily_checkin_passes = dbod_acc.define<DailyCheckinPass>('daily_checkin_passes', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
+    },
+    AccountID: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    purchaseYear: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    purchaseMonth: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+    },
+    activeFrom: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+    },
+    activeUntil: {
+        type: DataTypes.DATE,
+        allowNull: false
+    }
+}, {
+    timestamps: true,
+    tableName: 'daily_checkin_passes'
+});
+
+export { daily_rewards, daily_reward_claims, daily_checkin_passes };
