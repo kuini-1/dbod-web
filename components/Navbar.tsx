@@ -153,6 +153,9 @@ export function Navbar() {
                             <Link href="/cashshop" className={`hover:text-red-400 transition-colors ${pathname === '/cashshop' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {t('navItemCashshop')}
                             </Link>
+                            <Link href="/event-schedule" className={`hover:text-red-400 transition-colors ${pathname === '/event-schedule' ? 'text-red-400' : 'text-stone-300'}`}>
+                                {t('navItemEventSchedule')}
+                            </Link>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
