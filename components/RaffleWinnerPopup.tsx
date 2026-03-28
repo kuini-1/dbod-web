@@ -41,7 +41,7 @@ export default function RaffleWinnerPopup({ winner }: RaffleWinnerPopupProps) {
                             className="text-white/60 hover:text-white transition-colors"
                             aria-label={tx('Close', '닫기')}
                         >
-                            <span className="text-xl">×</span>
+                            <span className="text-xl">x</span>
                         </button>
                     </div>
 

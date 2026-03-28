@@ -6,6 +6,7 @@ import { slot_machine_items } from "@/lib/models/slot_machine_items";
 import { enrichSlotRowsWithSupabase } from "@/lib/slot-machine/enrich";
 import { addItemsToCashshop } from "@/lib/utils/cashshop";
 import { notifyCashshopRefresh, notifyWaguRefresh } from "@/lib/utils/character-bridge";
+import { slotMachineEffectiveWeight } from "@/lib/slot-machine/weights";
 
 type PoolRow = { id: number; tblidx: number; amount: number; feq: number };
 
@@ -24,11 +25,11 @@ function validPoolRow(row: PoolRow): boolean {
 }
 
 function pickWeighted(pool: PoolRow[]): PoolRow {
-    const total = pool.reduce((s, r) => s + r.feq, 0);
+    const total = pool.reduce((s, r) => s + slotMachineEffectiveWeight(r.feq), 0);
     if (total <= 0) return pool[pool.length - 1];
     let x = Math.random() * total;
     for (const row of pool) {
-        x -= row.feq;
+        x -= slotMachineEffectiveWeight(row.feq);
         if (x < 0) return row;
     }
     return pool[pool.length - 1];

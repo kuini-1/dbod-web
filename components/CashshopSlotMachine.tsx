@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { API } from '@/lib/api/client';
 import { iconPublicPathFromFilename } from '@/lib/utils/icon-public-path';
+import { slotMachineEffectiveWeight } from '@/lib/slot-machine/weights';
+import { WAGU_CP_PER_COIN } from '@/lib/wagu/constants';
 
 export type SlotMachineTx = (en: string, kr: string) => string;
 
@@ -35,20 +37,26 @@ type Props = {
     tx: SlotMachineTx;
     waguCoins: number | null;
     setWaguCoins: (n: number) => void;
+    cashPoints: number | null;
+    setCashPoints: (n: number) => void;
 };
 
 const SPIN_COUNTS = [1, 5, 10] as const;
 
-export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
+export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins, cashPoints, setCashPoints }: Props) {
     const router = useRouter();
     const txRef = useRef(tx);
     txRef.current = tx;
     const [items, setItems] = useState<SlotItem[]>([]);
     const [slotLoading, setSlotLoading] = useState(true);
     const [spinning, setSpinning] = useState(false);
-    const [lastWins, setLastWins] = useState<WinLine[] | null>(null);
+    /** Non-null while the post-spin rewards modal should be visible. */
+    const [rewardModalWins, setRewardModalWins] = useState<WinLine[] | null>(null);
     const [brokenIcons, setBrokenIcons] = useState<Record<number, boolean>>({});
     const [reelTick, setReelTick] = useState(0);
+    const [buyWaguOpen, setBuyWaguOpen] = useState(false);
+    const [buyWaguQty, setBuyWaguQty] = useState('1');
+    const [buyWaguLoading, setBuyWaguLoading] = useState(false);
 
     const waguPerSpin = 1;
 
@@ -86,15 +94,15 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
         return items[idx];
     }, [items, reelTick]);
 
-    /** Sum of feq weights — server uses these for weighted rolls. */
+    /** Sum of effective weights — matches server `pickWeighted` in `/api/slot-machine/spin`. */
     const totalFeqWeight = useMemo(
-        () => items.reduce((sum, r) => sum + Math.max(0, Number(r.feq) || 0), 0),
+        () => items.reduce((sum, r) => sum + slotMachineEffectiveWeight(r.feq), 0),
         [items]
     );
 
     function chancePercentLabel(feq: number): string {
         if (totalFeqWeight <= 0) return '—';
-        const pct = (Math.max(0, Number(feq) || 0) / totalFeqWeight) * 100;
+        const pct = (slotMachineEffectiveWeight(feq) / totalFeqWeight) * 100;
         return `${pct < 10 && pct > 0 ? pct.toFixed(2) : pct.toFixed(1)}%`;
     }
 
@@ -119,7 +127,7 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
         }
 
         setSpinning(true);
-        setLastWins(null);
+        setRewardModalWins(null);
         setReelTick(0);
 
         try {
@@ -145,18 +153,65 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
             if (typeof response.data.waguCoins === 'number') {
                 setWaguCoins(response.data.waguCoins);
             }
-            setLastWins(response.data.wins || []);
-            toast.success(
-                tx(
-                    `You won ${(response.data.wins || []).length} prize(s)! Check cashshop storage after relog.`,
-                    `${(response.data.wins || []).length}개 보상을 획득했습니다! 반영을 위해 재로그인 후 캐시샵 보관함을 확인하세요.`
-                )
-            );
+            const wins = response.data.wins || [];
+            if (wins.length > 0) {
+                setRewardModalWins(wins);
+            }
         } catch (e: unknown) {
             const msg = e instanceof Error ? e.message : tx('Spin failed.', '스핀에 실패했습니다.');
             toast.error(msg);
         } finally {
             setSpinning(false);
+        }
+    }
+
+    const parsedBuyQty = Math.floor(Number(buyWaguQty));
+    const buyQtyValid = Number.isFinite(parsedBuyQty) && parsedBuyQty >= 1;
+    const buyCpTotal = buyQtyValid ? parsedBuyQty * WAGU_CP_PER_COIN : 0;
+
+    async function confirmBuyWagu() {
+        if (!buyQtyValid || buyWaguLoading) return;
+
+        setBuyWaguLoading(true);
+        try {
+            const response = await API.post('/wagu/purchase', { count: parsedBuyQty });
+
+            if (response.status === 401) {
+                router.push('/login?redirect=/cashshop');
+                return;
+            }
+
+            if (response.status === 402) {
+                toast.error(tx('Not enough Cash Points.', '캐시 포인트가 부족합니다.'));
+                if (typeof response.data?.mallpoints === 'number') {
+                    setCashPoints(response.data.mallpoints);
+                }
+                return;
+            }
+
+            if (response.status >= 400 || !response.data?.ok) {
+                throw new Error(response.data?.message || tx('Purchase failed.', '구매에 실패했습니다.'));
+            }
+
+            if (typeof response.data?.waguCoins === 'number') {
+                setWaguCoins(response.data.waguCoins);
+            }
+            if (typeof response.data?.mallpoints === 'number') {
+                setCashPoints(response.data.mallpoints);
+            }
+            toast.success(
+                tx(
+                    `Purchased ${response.data.purchased} Wagu for ${response.data.cpSpent} CP.`,
+                    `와구 ${response.data.purchased}개를 ${response.data.cpSpent} CP에 구매했습니다.`
+                )
+            );
+            setBuyWaguOpen(false);
+            setBuyWaguQty('1');
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : tx('Purchase failed.', '구매에 실패했습니다.');
+            toast.error(msg);
+        } finally {
+            setBuyWaguLoading(false);
         }
     }
 
@@ -178,9 +233,25 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
                     </p>
                 </div>
                 {waguCoins !== null ? (
-                    <div className="shrink-0 rounded-xl border border-amber-400/35 bg-amber-500/10 px-4 py-2 text-amber-100">
-                        <span className="text-xs text-amber-200/80">{tx('Your Wagu', '보유 와구')}</span>
-                        <p className="text-lg font-bold tabular-nums">{waguCoins}</p>
+                    <div className="shrink-0 flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                        <div className="rounded-xl border border-amber-400/35 bg-amber-500/10 px-4 py-2 text-amber-100">
+                            <span className="text-xs text-amber-200/80">{tx('Your Wagu', '보유 와구')}</span>
+                            <p className="text-lg font-bold tabular-nums">{waguCoins}</p>
+                        </div>
+                        <button
+                            type="button"
+                            disabled={buyWaguLoading}
+                            onClick={() => {
+                                setBuyWaguQty('1');
+                                setBuyWaguOpen(true);
+                            }}
+                            className="rounded-xl border border-amber-300/45 bg-amber-600/25 px-4 py-2 text-sm font-semibold text-amber-50 hover:bg-amber-600/40 disabled:opacity-45 disabled:cursor-not-allowed transition cursor-pointer self-start sm:self-auto"
+                        >
+                            {tx('Buy Wagu', '와구 구매')}
+                            <span className="block text-[11px] font-normal text-amber-200/80 mt-0.5">
+                                {tx(`1 Wagu = ${WAGU_CP_PER_COIN} CP`, `와구 1 = ${WAGU_CP_PER_COIN} CP`)}
+                            </span>
+                        </button>
                     </div>
                 ) : null}
             </div>
@@ -221,9 +292,9 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
                             <p className="mt-3 text-xs text-white/50 text-center min-h-[2.5rem] line-clamp-2 px-2">
                                 {spinning && reelPreview
                                     ? reelPreview.name
-                                    : lastWins === null
-                                      ? tx('Choose spins below', '아래에서 스핀 횟수를 선택하세요')
-                                      : null}
+                                      : rewardModalWins === null
+                                        ? tx('Choose spins below', '아래에서 스핀 횟수를 선택하세요')
+                                        : null}
                             </p>
                         </>
                     )}
@@ -254,41 +325,6 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                    {lastWins && lastWins.length > 0 ? (
-                        <div className="mb-4 rounded-xl border border-emerald-500/25 bg-emerald-950/20 p-3">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300/90 mb-2">
-                                {tx('This round', '이번 결과')}
-                            </p>
-                            <ul className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                                {lastWins.map((w, i) => (
-                                    <li key={`${w.tblidx}-${i}`} className="flex items-center gap-2 text-sm text-white/90">
-                                        <span className="w-9 h-9 shrink-0 rounded-lg border border-white/10 bg-black/30 flex items-center justify-center overflow-hidden">
-                                            <Image
-                                                src={
-                                                    brokenIcons[w.tblidx]
-                                                        ? '/icon/i_empty_cs_s.png'
-                                                        : iconPathFromUrl(w.iconUrl, '')
-                                                }
-                                                alt=""
-                                                width={32}
-                                                height={32}
-                                                className="object-contain"
-                                                unoptimized
-                                                onError={() =>
-                                                    setBrokenIcons((prev) => ({ ...prev, [w.tblidx]: true }))
-                                                }
-                                            />
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="font-medium">{w.name}</span>
-                                            <span className="text-white/55"> ×{w.amount}</span>
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ) : null}
-
                     <div className="mb-2">
                         <p className="text-xs font-semibold uppercase tracking-wide text-white/45">
                             {tx('Prize pool', '보상 풀')}
@@ -363,6 +399,150 @@ export function CashshopSlotMachine({ tx, waguCoins, setWaguCoins }: Props) {
                     </div>
                 </div>
             </div>
+
+            {rewardModalWins && rewardModalWins.length > 0 ? (
+                <div
+                    className="fixed inset-0 z-[10050] flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="slot-rewards-modal-title"
+                >
+                    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" aria-hidden />
+                    <div className="relative w-full max-w-md rounded-2xl border border-amber-500/40 bg-gradient-to-b from-stone-900 to-stone-950 shadow-[0_0_48px_rgba(245,158,11,0.25)] overflow-hidden">
+                        <div className="border-b border-amber-500/25 bg-amber-950/30 px-5 py-4">
+                            <h2
+                                id="slot-rewards-modal-title"
+                                className="text-lg font-bold text-amber-100"
+                            >
+                                {tx('You won!', '당첨!')}
+                            </h2>
+                            <p className="mt-1 text-xs text-amber-200/70 leading-relaxed">
+                                {tx(
+                                    'Items were sent to your cashshop storage. Log out and back in to see them.',
+                                    '아이템은 캐시샵 보관함으로 지급되었습니다. 재로그인 후 확인하세요.'
+                                )}
+                            </p>
+                        </div>
+                        <ul className="max-h-[min(50vh,320px)] overflow-y-auto px-4 py-3 space-y-2">
+                            {rewardModalWins.map((w, i) => (
+                                <li
+                                    key={`${w.tblidx}-${i}`}
+                                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/35 px-3 py-2.5"
+                                >
+                                    <span className="w-11 h-11 shrink-0 rounded-lg border border-amber-500/20 bg-black/40 flex items-center justify-center overflow-hidden">
+                                        <Image
+                                            src={
+                                                brokenIcons[w.tblidx]
+                                                    ? '/icon/i_empty_cs_s.png'
+                                                    : iconPathFromUrl(w.iconUrl, '')
+                                            }
+                                            alt=""
+                                            width={40}
+                                            height={40}
+                                            className="object-contain p-1"
+                                            unoptimized
+                                            onError={() =>
+                                                setBrokenIcons((prev) => ({ ...prev, [w.tblidx]: true }))
+                                            }
+                                        />
+                                    </span>
+                                    <span className="min-w-0 flex-1 text-sm text-white/95">
+                                        <span className="font-medium">{w.name}</span>
+                                        <span className="text-amber-200/90 tabular-nums"> x{w.amount}</span>
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="border-t border-white/10 bg-black/25 px-4 py-4">
+                            <button
+                                type="button"
+                                autoFocus
+                                onClick={() => setRewardModalWins(null)}
+                                className="w-full rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 py-3 text-sm font-bold text-white shadow-lg hover:from-amber-500 hover:to-orange-500 transition cursor-pointer"
+                            >
+                                {tx('OK', '확인')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {buyWaguOpen ? (
+                <div
+                    className="fixed inset-0 z-[10060] flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="buy-wagu-modal-title"
+                >
+                    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" aria-hidden />
+                    <div className="relative w-full max-w-sm rounded-2xl border border-amber-500/40 bg-gradient-to-b from-stone-900 to-stone-950 shadow-[0_0_48px_rgba(245,158,11,0.25)] overflow-hidden">
+                        <div className="border-b border-amber-500/25 bg-amber-950/30 px-5 py-4">
+                            <h2 id="buy-wagu-modal-title" className="text-lg font-bold text-amber-100">
+                                {tx('Buy Wagu', '와구 구매')}
+                            </h2>
+                            <p className="mt-1 text-xs text-amber-200/75">
+                                {tx(
+                                    `Exchange Cash Points at ${WAGU_CP_PER_COIN} CP per Wagu coin.`,
+                                    `캐시 포인트로 와구를 구매합니다. 와구 1개당 ${WAGU_CP_PER_COIN} CP입니다.`
+                                )}
+                            </p>
+                        </div>
+                        <div className="px-5 py-4 space-y-4">
+                            <label className="block">
+                                <span className="text-xs text-white/55 uppercase tracking-wide">
+                                    {tx('Amount', '수량')}
+                                </span>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    value={buyWaguQty}
+                                    onChange={(e) => setBuyWaguQty(e.target.value)}
+                                    className="mt-1.5 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-white tabular-nums focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                />
+                            </label>
+                            <div className="rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white/85">
+                                <p className="flex justify-between gap-2">
+                                    <span className="text-white/55">{tx('Total', '합계')}</span>
+                                    <span className="font-semibold text-red-300 tabular-nums">
+                                        {buyQtyValid ? buyCpTotal : '—'} CP
+                                    </span>
+                                </p>
+                                {cashPoints !== null ? (
+                                    <p className="mt-1 text-xs text-white/45">
+                                        {tx('Your CP', '보유 CP')}:{' '}
+                                        <span className="text-white/70 tabular-nums">{cashPoints}</span>
+                                    </p>
+                                ) : null}
+                            </div>
+                        </div>
+                        <div className="flex gap-2 border-t border-white/10 bg-black/25 px-4 py-4">
+                            <button
+                                type="button"
+                                disabled={buyWaguLoading}
+                                onClick={() => {
+                                    setBuyWaguOpen(false);
+                                    setBuyWaguQty('1');
+                                }}
+                                className="flex-1 rounded-xl border border-white/20 py-2.5 text-sm font-semibold text-white/85 hover:bg-white/10 disabled:opacity-50 transition cursor-pointer"
+                            >
+                                {tx('Cancel', '취소')}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={
+                                    buyWaguLoading ||
+                                    !buyQtyValid ||
+                                    (cashPoints !== null && cashPoints < buyCpTotal)
+                                }
+                                onClick={() => void confirmBuyWagu()}
+                                className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 py-2.5 text-sm font-bold text-white shadow-lg hover:from-amber-500 hover:to-orange-500 disabled:opacity-45 disabled:cursor-not-allowed transition cursor-pointer"
+                            >
+                                {buyWaguLoading ? tx('Buying...', '구매 중...') : tx('Buy', '구매')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 }

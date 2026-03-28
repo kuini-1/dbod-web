@@ -263,7 +263,13 @@ export default function CashshopPage() {
                     </div>
                 </div>
 
-                <CashshopSlotMachine tx={tx} waguCoins={waguCoins} setWaguCoins={setWaguCoins} />
+                <CashshopSlotMachine
+                    tx={tx}
+                    waguCoins={waguCoins}
+                    setWaguCoins={setWaguCoins}
+                    cashPoints={cashPoints}
+                    setCashPoints={setCashPoints}
+                />
 
                 <div className="mb-6">
                     <input

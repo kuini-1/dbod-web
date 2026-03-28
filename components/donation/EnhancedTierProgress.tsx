@@ -279,7 +279,7 @@ export default function EnhancedTierProgress({
                                                 )}
                                             </div>
                                             <span className="leading-relaxed">
-                                                {reward.item?.name_en || `Item ${reward.tblidx}`} <span className="text-white/50">×</span>{reward.amount}
+                                                {reward.item?.name_en || `Item ${reward.tblidx}`} <span className="text-white/50">x</span>{reward.amount}
                                             </span>
                                         </li>
                                     ))

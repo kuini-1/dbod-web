@@ -377,8 +377,8 @@ export default function AdminSlotMachinePage() {
         <AdminShell
             title={tx('Slot machine pool', '슬롯 머신 풀')}
             subtitle={tx(
-                'Pick items from the cashshop catalog (same as donation tiers). feq 1 = rarest, 10 = most common.',
-                '후원 티어와 동일하게 캐시샵 목록에서 선택하세요. feq 1=가장 희귀, 10=가장 흔합니다.'
+                'Pick items from the cashshop catalog (same as donation tiers). feq 1 = rarest, 10 = most common. Spin odds use effective weight feq² (low feq is much rarer than high feq).',
+                '후원 티어와 동일하게 캐시샵 목록에서 선택하세요. feq 1=가장 희귀, 10=가장 흔합니다. 당첨 확률은 feq²를 가중치로 씁니다(낮은 feq는 훨씬 드묾).'
             )}
         >
             <div className="flex flex-col gap-6">
@@ -524,8 +524,8 @@ export default function AdminSlotMachinePage() {
                 <AdminCard
                     title={tx('All cashshop items', '전체 캐시샵 아이템')}
                     description={tx(
-                        'Search, set stack amount and feq (1–10), then add to the slot pool.',
-                        '검색 후 수량·빈도(1–10)를 정하고 풀에 추가하세요.'
+                        'Search, set stack amount and feq (1–10), then add to the slot pool. Weight for each row is feq squared.',
+                        '검색 후 수량·빈도(1–10)를 정하고 풀에 추가하세요. 각 행 가중치는 feq의 제곱입니다.'
                     )}
                 >
                     <div className="mb-3 flex flex-wrap items-center gap-2">

@@ -162,7 +162,7 @@ export function WpsBlockCard({
                 onClick={() => handleRemoveParam(k)}
                 className="rounded px-2 py-1 text-xs text-red-400 hover:bg-red-500/20"
               >
-                ×
+                x
               </button>
             </div>
           );

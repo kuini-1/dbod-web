@@ -378,7 +378,7 @@ export default function PopupBanner() {
                                             </div>
                                             <div className="text-indigo-300 font-semibold">
                                                 <span>
-                                                    <span className="align-sub inline-block leading-none">×</span>
+                                                    <span className="align-sub inline-block leading-none">x</span>
                                                     {currentPopup.cashPoints}
                                                 </span>
                                             </div>
@@ -412,7 +412,7 @@ export default function PopupBanner() {
                                             </div>
                                             <div className="text-indigo-400 font-semibold">
                                                 <span>
-                                                    <span className="align-sub inline-block leading-none">×</span>
+                                                    <span className="align-sub inline-block leading-none">x</span>
                                                     {row.amount}
                                                 </span>
                                             </div>
