@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
                     AccountID: userId,
                     rewardId: reward.id,
                     claimedAt: now
-                }, { transaction });
+                } as any, { transaction });
             }
 
             await addItemsToCashshop(userId, [{

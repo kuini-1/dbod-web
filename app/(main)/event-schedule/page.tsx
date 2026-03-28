@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 
 type WeeklyEvent = {
@@ -143,11 +143,10 @@ function getKstTimeParts(date: Date): { dayIndexMondayBased: number; minutes: nu
 
 export default function EventSchedulePage() {
     const { locale } = useLocale();
-    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
-    const [now, setNow] = useState<Date | null>(null);
+    const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
+    const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
-        setNow(new Date());
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -166,7 +165,7 @@ export default function EventSchedulePage() {
             saturday: tx('Saturday', '토요일'),
             sunday: tx('Sunday', '일요일'),
         }),
-        [locale]
+        [tx]
     );
 
     const schedule = useMemo(() => {
@@ -200,10 +199,9 @@ export default function EventSchedulePage() {
                 isToday,
             };
         });
-    }, [dayIndexMondayBased, currentMinutes]);
+    }, [dayIndexMondayBased, currentMinutes, tx]);
 
     const currentKstText = useMemo(() => {
-        if (!now) return '--:--:--';
         return new Intl.DateTimeFormat(locale === 'kr' ? 'ko-KR' : 'en-US', {
             timeZone: 'Asia/Seoul',
             weekday: 'short',
