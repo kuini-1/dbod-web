@@ -6,6 +6,7 @@ import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { API } from '@/lib/api/client';
 import { useLocale } from '@/components/LocaleProvider';
+import { CashshopSlotMachine } from '@/components/CashshopSlotMachine';
 
 type CashshopItem = {
     itemId: number;
@@ -66,6 +67,7 @@ export default function CashshopPage() {
     const [search, setSearch] = useState('');
     const [brokenIcons, setBrokenIcons] = useState<Record<number, boolean>>({});
     const [cashPoints, setCashPoints] = useState<number | null>(null);
+    const [waguCoins, setWaguCoins] = useState<number | null>(null);
     const [giftItem, setGiftItem] = useState<CashshopItem | null>(null);
     const [giftCharacterName, setGiftCharacterName] = useState('');
     const [giftTarget, setGiftTarget] = useState<GiftTarget | null>(null);
@@ -82,8 +84,13 @@ export default function CashshopPage() {
                 setItems(response.data.items || []);
 
                 const privateRes = await API.get('/private');
-                if ((privateRes.status === 200 || privateRes.status === 201) && typeof privateRes.data?.mallpoints === 'number') {
-                    setCashPoints(privateRes.data.mallpoints);
+                if (privateRes.status === 200 || privateRes.status === 201) {
+                    if (typeof privateRes.data?.mallpoints === 'number') {
+                        setCashPoints(privateRes.data.mallpoints);
+                    }
+                    if (typeof privateRes.data?.waguCoins === 'number') {
+                        setWaguCoins(privateRes.data.waguCoins);
+                    }
                 }
             } catch (error: any) {
                 console.error(error);
@@ -255,6 +262,8 @@ export default function CashshopPage() {
                         </button>
                     </div>
                 </div>
+
+                <CashshopSlotMachine tx={tx} waguCoins={waguCoins} setWaguCoins={setWaguCoins} />
 
                 <div className="mb-6">
                     <input

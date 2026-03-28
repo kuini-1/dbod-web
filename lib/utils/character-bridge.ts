@@ -22,6 +22,34 @@ export async function postToBridge(path: string, body: object): Promise<Response
 }
 
 /**
+ * Notify web-bridge to refresh cashshop storage for an account (e.g. after web delivery).
+ */
+export async function notifyCashshopRefresh(accountId: number): Promise<void> {
+    try {
+        const res = await postToBridge('/api/force-cashshop-refresh', { accountId });
+        if (!res.ok) {
+            console.error('Bridge force-cashshop-refresh failed:', res.status, await res.text());
+        }
+    } catch (err) {
+        console.error('Bridge force-cashshop-refresh error:', err);
+    }
+}
+
+/**
+ * Notify web-bridge to refresh Wagu balance for an account (bridge must implement /api/force-wagu-refresh).
+ */
+export async function notifyWaguRefresh(accountId: number): Promise<void> {
+    try {
+        const res = await postToBridge('/api/force-wagu-refresh', { accountId });
+        if (!res.ok) {
+            console.error('Bridge force-wagu-refresh failed:', res.status, await res.text());
+        }
+    } catch (err) {
+        console.error('Bridge force-wagu-refresh error:', err);
+    }
+}
+
+/**
  * Update CCBD_Entry in DB and notify web-bridge.
  */
 export async function syncCCBDEntry(charId: number, value: number): Promise<void> {

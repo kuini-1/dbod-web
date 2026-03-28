@@ -2,6 +2,7 @@ import { dbod_acc } from './connection';
 import { accounts, event_reward, vip_reward } from '../models/accounts';
 import { donation_tiers } from '../models/donation_tiers';
 import { donation_tier_items } from '../models/donation_tier_items';
+import { slot_machine_items } from '../models/slot_machine_items';
 import { donation_tier_claims } from '../models/donation_tier_claims';
 import popup_banners from '../models/popup_banners';
 import popup_banner_items from '../models/popup_banner_items';
@@ -24,6 +25,19 @@ const SEED_PACKAGES = [
     { price: 100, cashPoints: 1250, isForDonation: 1, sortOrder: 6, name: '$100 Package' },
 ];
 
+function physicalColumnName(attribute: unknown, attributeKey: string): string {
+    const field = (attribute as { field?: string })?.field;
+    return field && String(field).trim() ? String(field) : attributeKey;
+}
+
+function tableHasColumnInsensitive(
+    existingColumns: Record<string, unknown>,
+    dbColumnName: string
+): boolean {
+    const target = dbColumnName.toLowerCase();
+    return Object.keys(existingColumns).some((k) => k.toLowerCase() === target);
+}
+
 async function syncModelAdditiveOnly(model: ModelStatic<Model<any, any>>) {
     const sequelize = model.sequelize ?? dbod_acc;
     const qi = sequelize.getQueryInterface();
@@ -43,8 +57,9 @@ async function syncModelAdditiveOnly(model: ModelStatic<Model<any, any>>) {
     }
 
     const rawAttributes = model.getAttributes();
-    for (const [columnName, attribute] of Object.entries(rawAttributes)) {
-        if (Object.prototype.hasOwnProperty.call(existingColumns, columnName)) {
+    for (const [attributeKey, attribute] of Object.entries(rawAttributes)) {
+        const dbColumnName = physicalColumnName(attribute, attributeKey);
+        if (tableHasColumnInsensitive(existingColumns, dbColumnName)) {
             continue;
         }
 
@@ -57,8 +72,19 @@ async function syncModelAdditiveOnly(model: ModelStatic<Model<any, any>>) {
             autoIncrement: false,
         };
 
-        await qi.addColumn(tableName, columnName, safeAttribute as any);
-        console.log(`Added missing column ${tableName}.${columnName}`);
+        try {
+            await qi.addColumn(tableName, dbColumnName, safeAttribute as any);
+            console.log(`Added missing column ${tableName}.${dbColumnName}`);
+        } catch (err: unknown) {
+            const code = (err as { parent?: { errno?: number } })?.parent?.errno;
+            if (code === 1060) {
+                console.warn(
+                    `[DB sync] Skipped addColumn ${tableName}.${dbColumnName} (duplicate field; likely already present).`
+                );
+                continue;
+            }
+            throw err;
+        }
     }
 }
 
@@ -75,8 +101,10 @@ export async function syncAll() {
     await Promise.all([
         syncModelAdditiveOnly(donation_tier_items),
         syncModelAdditiveOnly(donation_tier_claims),
+        syncModelAdditiveOnly(slot_machine_items),
     ]);
     console.log('Donation tier items and claims tables synced');
+    console.log('Slot machine items table synced');
 
     await syncModelAdditiveOnly(popup_banners);
     console.log('Popup banners table created or updated successfully');

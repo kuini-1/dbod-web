@@ -43,12 +43,12 @@ export async function register() {
     if (!globalThis.__dbodSyncPromise) {
         globalThis.__dbodSyncPromise = (async () => {
             try {
-                // Do not use a static `import()` here: webpack would bundle Sequelize into the
-                // instrumentation graph and fail on Node built-ins (`fs`, `crypto`, `path`).
-                // This indirect import is resolved only at runtime in Node.
-                // Ship `./lib/**` in standalone via `outputFileTracingIncludes` in next.config.mjs.
-                const dynamicImport = new Function('m', 'return import(m)') as (m: string) => Promise<{ syncAll: () => Promise<void> }>;
-                const { syncAll } = await dynamicImport('./lib/database/sync-all');
+                // A normal dynamic import so webpack resolves `./lib/...` from this file’s location
+                // and emits it into the instrumentation bundle. `new Function('import(m)')` keeps the
+                // specifier as a runtime string, so Node resolves it from `.next/.../instrumentation.js`
+                // and fails with ERR_MODULE_NOT_FOUND (no `lib/` there).
+                // DB drivers stay external via `serverExternalPackages` + webpack `externals` in next.config.mjs.
+                const { syncAll } = await import('./lib/database/sync-all');
                 await syncAll();
                 console.log('[DB] startup additive sync complete');
             } catch (error) {

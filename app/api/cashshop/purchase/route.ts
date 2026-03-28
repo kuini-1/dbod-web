@@ -5,6 +5,7 @@ import { dbod_acc } from "@/lib/database/connection";
 import { accounts } from "@/lib/models/accounts";
 import { characters } from "@/lib/models/characters";
 import { addItemsToCashshop } from "@/lib/utils/cashshop";
+import { notifyCashshopRefresh } from "@/lib/utils/character-bridge";
 
 const DONATE_REDIRECT_URL = "/donate?from=cashshop&insufficient=1";
 
@@ -131,25 +132,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (result.ok) {
-            const bridgeUrl = process.env.WEB_BRIDGE_URL || 'http://127.0.0.1:8080';
-            const apiKey = process.env.WEB_BRIDGE_API_KEY || '';
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
-            };
-            if (apiKey) {
-                headers['x-api-key'] = apiKey;
-            }
-
-            try {
-                await fetch(`${bridgeUrl}/api/force-cashshop-refresh`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({ accountId: refreshAccountId }),
-                    cache: 'no-store',
-                });
-            } catch (refreshError) {
-                console.error('Cashshop force refresh failed:', refreshError);
-            }
+            await notifyCashshopRefresh(refreshAccountId);
         }
 
         return NextResponse.json(result, { status: result.status });

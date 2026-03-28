@@ -236,6 +236,7 @@ const enMessages: Record<string, string> = {
     statDetailFourSlotsTitle: "One item — four random lines (your worth pool)",
     statDetailFourSlotsHint:
         "Uses a single worth pool ≈{0} and four distinct enchant lines (greedy, lowest cost first), like four ProcessRandomOption steps.",
+    adminSlotMachine: "Slot machine",
 };
 
 const krOverrides: Record<string, string> = {
@@ -354,6 +355,7 @@ const krOverrides: Record<string, string> = {
     adminBuffs: "버프",
     adminItems: "아이템",
     adminDonationTiers: "후원 티어",
+    adminSlotMachine: "슬롯 머신",
     adminServer: "서버",
     adminWpsScripts: "WPS 스크립트",
     adminMasterStatus: "마스터 상태",

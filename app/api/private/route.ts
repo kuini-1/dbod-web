@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
             isGm: user.isGm,
             email: user.email,
             mallpoints: user.mallpoints,
+            waguCoins: Number(user.WaguCoins ?? 0),
             donated: user.donated,
             serverTimeUtc: new Date().toISOString()
         }, { status: 201 });
