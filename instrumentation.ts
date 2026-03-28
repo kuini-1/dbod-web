@@ -43,9 +43,12 @@ export async function register() {
     if (!globalThis.__dbodSyncPromise) {
         globalThis.__dbodSyncPromise = (async () => {
             try {
-                // Static import path so Next standalone output tracing includes this module.
-                // (A string built via `new Function` is not traced and can 404 in production.)
-                const { syncAll } = await import('./lib/database/sync-all');
+                // Do not use a static `import()` here: webpack would bundle Sequelize into the
+                // instrumentation graph and fail on Node built-ins (`fs`, `crypto`, `path`).
+                // This indirect import is resolved only at runtime in Node.
+                // Ship `./lib/**` in standalone via `outputFileTracingIncludes` in next.config.mjs.
+                const dynamicImport = new Function('m', 'return import(m)') as (m: string) => Promise<{ syncAll: () => Promise<void> }>;
+                const { syncAll } = await dynamicImport('./lib/database/sync-all');
                 await syncAll();
                 console.log('[DB] startup additive sync complete');
             } catch (error) {
