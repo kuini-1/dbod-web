@@ -11,7 +11,7 @@ type DailyRewardRow = {
     date?: number;
     dayNumber?: number;
     itemId: number;
-    amount: number;
+    amount: number; 
 };
 
 const CHECKIN_PASS_PRICE = Number(process.env.DAILY_CHECKIN_PASS_PRICE ?? 150);
