@@ -4,6 +4,13 @@ import { getUserFromRequest } from '@/lib/auth/utils';
 import { daily_rewards, daily_reward_claims, daily_checkin_passes } from '@/lib/models/daily_rewards';
 import { addItemsToCashshop } from '@/lib/utils/cashshop';
 import { dbod_acc } from '@/lib/database/connection';
+import {
+    getDailyLoginCalendarTimeZone,
+    getZonedCalendarParts,
+    getZonedDateOnlyString,
+    getZonedMonthUtcRange,
+    hasClaimOnCurrentCalendarDay,
+} from '@/lib/utils/daily-login-calendar';
 
 function isSchemaError(error: unknown): boolean {
     const message = String((error as any)?.message || '').toLowerCase();
@@ -18,13 +25,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: 'User not authenticated' }, { status: 401 });
         }
 
+        const tz = getDailyLoginCalendarTimeZone();
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        const monthStart = new Date(currentYear, currentMonth, 1);
-        const monthEnd = new Date(currentYear, currentMonth + 1, 1);
-        const currentDayOfMonth = now.getDate();
+        const { year: currentYear, month: calMonth, day: currentDayOfMonth } = getZonedCalendarParts(now, tz);
+        const { start: monthStart, end: monthEnd } = getZonedMonthUtcRange(currentYear, calMonth, tz);
+        const claimDateOnly = getZonedDateOnlyString(now, tz);
 
         let rewardRows: any[] = [];
         try {
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
                 where: {
                     AccountID: userId,
                     [Op.or]: [
-                        { claimYear: currentYear, claimMonth: currentMonth + 1 },
+                        { claimYear: currentYear, claimMonth: calMonth },
                         { claimedAt: { [Op.gte]: monthStart, [Op.lt]: monthEnd } }
                     ]
                 }
@@ -87,11 +92,7 @@ export async function POST(request: NextRequest) {
             if (matchedReward?.dayNumber) claimDaySet.add(matchedReward.dayNumber);
         }
 
-        const lastClaim = monthClaims.length > 0
-            ? new Date(Math.max(...monthClaims.map((c) => new Date(c.claimDate || c.claimedAt).getTime())))
-            : null;
-
-        const hasClaimedToday = !!lastClaim && new Date(lastClaim).setHours(0, 0, 0, 0) === today.getTime();
+        const hasClaimedToday = hasClaimOnCurrentCalendarDay(monthClaims, now, tz);
         if (hasClaimedToday) {
             return NextResponse.json({ success: true, autoClaimed: false, reason: 'already_claimed_today' }, { status: 200 });
         }
@@ -126,7 +127,7 @@ export async function POST(request: NextRequest) {
                 where: {
                     AccountID: userId,
                     purchaseYear: currentYear,
-                    purchaseMonth: currentMonth + 1
+                    purchaseMonth: calMonth
                 },
                 order: [['id', 'DESC']]
             });
@@ -143,8 +144,8 @@ export async function POST(request: NextRequest) {
                     rewardId: reward.id,
                     claimDayNumber: targetDay,
                     claimYear: currentYear,
-                    claimMonth: currentMonth + 1,
-                    claimDate: today,
+                    claimMonth: calMonth,
+                    claimDate: claimDateOnly as unknown as Date,
                     claimedAt: now
                 }, { transaction });
             } catch (error) {

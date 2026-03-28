@@ -4,6 +4,14 @@ import { Op } from 'sequelize';
 import { getUserFromRequest } from '../../../../lib/auth/utils';
 import { addItemsToCashshop } from '../../../../lib/utils/cashshop';
 import { dbod_acc } from '../../../../lib/database/connection';
+import {
+    daysInZonedMonth,
+    getDailyLoginCalendarTimeZone,
+    getZonedCalendarParts,
+    getZonedDateOnlyString,
+    getZonedMonthUtcRange,
+    hasClaimOnCurrentCalendarDay,
+} from '../../../../lib/utils/daily-login-calendar';
 
 function isSchemaError(error: unknown): boolean {
     const message = String((error as any)?.message || '').toLowerCase();
@@ -22,12 +30,11 @@ export async function POST(request: NextRequest) {
             }, { status: 401 });
         }
 
-        // Get current date
+        const tz = getDailyLoginCalendarTimeZone();
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const monthStart = new Date(currentYear, currentMonth, 1);
+        const { year: currentYear, month: calMonth, day: currentDayOfMonth } = getZonedCalendarParts(now, tz);
+        const { start: monthStart, end: monthEnd } = getZonedMonthUtcRange(currentYear, calMonth, tz);
+        const claimDateOnly = getZonedDateOnlyString(now, tz);
 
         const { date } = await request.json();
         
@@ -40,7 +47,7 @@ export async function POST(request: NextRequest) {
         }
 
         const dayToClaim = Number(date);
-        const monthDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const monthDays = daysInZonedMonth(currentYear, calMonth);
         if (!Number.isFinite(dayToClaim) || dayToClaim < 1 || dayToClaim > monthDays) {
             return NextResponse.json({
                 success: false,
@@ -88,15 +95,13 @@ export async function POST(request: NextRequest) {
             }, { status: 404 });
         }
 
-        // Get all claims for this month
-        const monthEnd = new Date(currentYear, currentMonth + 1, 1);
         let monthClaims: any[] = [];
         try {
             monthClaims = await daily_reward_claims.findAll({
                 where: {
                     AccountID: userId,
                     [Op.or]: [
-                        { claimYear: currentYear, claimMonth: currentMonth + 1 },
+                        { claimYear: currentYear, claimMonth: calMonth },
                         {
                             claimedAt: {
                                 [Op.gte]: monthStart,
@@ -120,27 +125,11 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        // Get the last claim date
-        const lastClaim = monthClaims.length > 0
-            ? new Date(Math.max(...monthClaims.map((c) => new Date(c.claimDate || c.claimedAt).getTime())))
-            : null;
-
-        // Check if enough time has passed since last claim (must be a different day)
-        if (lastClaim) {
-            const lastClaimDate = new Date(lastClaim);
-            const today = new Date();
-            
-            // Reset time part to compare only dates
-            lastClaimDate.setHours(0, 0, 0, 0);
-            today.setHours(0, 0, 0, 0);
-            
-            // Check if it's the same day
-            if (today.getTime() === lastClaimDate.getTime()) {
-                return NextResponse.json({
-                    success: false,
-                    message: 'You can only claim one reward per day'
-                }, { status: 400 });
-            }
+        if (hasClaimOnCurrentCalendarDay(monthClaims, now, tz)) {
+            return NextResponse.json({
+                success: false,
+                message: 'You can only claim one reward per day'
+            }, { status: 400 });
         }
 
         // Build set of month claim days (new + backward compatible rows)
@@ -164,7 +153,7 @@ export async function POST(request: NextRequest) {
                 where: {
                     AccountID: userId,
                     [Op.or]: [
-                        { claimYear: currentYear, claimMonth: currentMonth + 1, claimDayNumber: dayToClaim },
+                        { claimYear: currentYear, claimMonth: calMonth, claimDayNumber: dayToClaim },
                         {
                             rewardId: reward.id,
                             claimedAt: {
@@ -205,6 +194,12 @@ export async function POST(request: NextRequest) {
                 message: 'You must claim all previous rewards first'
             }, { status: 400 });
         }
+        if (dayToClaim > currentDayOfMonth) {
+            return NextResponse.json({
+                success: false,
+                message: 'This reward day is not available yet'
+            }, { status: 400 });
+        }
         if (dayToClaim >= 25) {
             if (maxSequentialBaseDay < 24) {
                 return NextResponse.json({
@@ -229,7 +224,7 @@ export async function POST(request: NextRequest) {
                 where: {
                     AccountID: userId,
                     purchaseYear: currentYear,
-                    purchaseMonth: currentMonth + 1
+                    purchaseMonth: calMonth
                 },
                 order: [['id', 'DESC']]
             });
@@ -247,8 +242,8 @@ export async function POST(request: NextRequest) {
                     rewardId: reward.id,
                     claimDayNumber: dayToClaim,
                     claimYear: currentYear,
-                    claimMonth: currentMonth + 1,
-                    claimDate: today,
+                    claimMonth: calMonth,
+                    claimDate: claimDateOnly as unknown as Date,
                     claimedAt: now
                 }, { transaction });
             } catch (error) {

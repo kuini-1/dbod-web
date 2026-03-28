@@ -5,6 +5,14 @@ import { getUserFromRequest } from '../../../lib/auth/utils';
 import { querySupabaseTable } from '../../../lib/supabase/server';
 import { CASHSHOP_TABLE_ID, normalizeCashshopRow } from '../../../lib/cashshop/catalog';
 import { resolveIconFilenameCase } from '../../../lib/utils/icon-resolver';
+import {
+    daysInZonedMonth,
+    getCalendarDayKey,
+    getDailyLoginCalendarTimeZone,
+    getZonedCalendarParts,
+    getZonedMonthUtcRange,
+    hasClaimOnCurrentCalendarDay,
+} from '../../../lib/utils/daily-login-calendar';
 
 type DailyRewardRow = {
     id: number;
@@ -33,17 +41,11 @@ export async function GET(request: NextRequest) {
             }, { status: 401 });
         }
 
-        // Get current date
+        const tz = getDailyLoginCalendarTimeZone();
         const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-
-        const monthDays = new Date(currentYear, currentMonth + 1, 0).getDate();
-
-        // Get all login dates for this month (kept for frontend info and compatibility)
-        const monthStart = new Date(currentYear, currentMonth, 1);
-        const monthEnd = new Date(currentYear, currentMonth + 1, 1);
+        const { year: currentYear, month: calMonth, day: currentDayOfMonth } = getZonedCalendarParts(now, tz);
+        const monthDays = daysInZonedMonth(currentYear, calMonth);
+        const { start: monthStart, end: monthEnd } = getZonedMonthUtcRange(currentYear, calMonth, tz);
 
         // Get all configured rewards (days 1..24 + repeat day 25 marker)
         let rewardRows: DailyRewardRow[] = [];
@@ -91,7 +93,7 @@ export async function GET(request: NextRequest) {
                 where: {
                     AccountID: userId,
                     [Op.or]: [
-                        { claimYear: currentYear, claimMonth: currentMonth + 1 },
+                        { claimYear: currentYear, claimMonth: calMonth },
                         {
                             claimedAt: {
                                 [Op.gte]: monthStart,
@@ -128,11 +130,6 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Last claim date is used to enforce one claim/day on UI availability.
-        const lastClaim = monthClaims.length > 0
-            ? new Date(Math.max(...monthClaims.map((c) => new Date(c.claimDate || c.claimedAt).getTime())))
-            : null;
-
         let maxSequentialBaseDay = 0;
         while (maxSequentialBaseDay < 24 && claimDaySet.has(maxSequentialBaseDay + 1)) {
             maxSequentialBaseDay += 1;
@@ -141,8 +138,7 @@ export async function GET(request: NextRequest) {
         const claimedRepeatDays = Array.from(claimDaySet.values()).filter((day) => day >= 25).sort((a, b) => a - b);
         const nextRepeatClaimDay = claimedRepeatDays.length > 0 ? claimedRepeatDays[claimedRepeatDays.length - 1] + 1 : 25;
 
-        const hasClaimedToday = !!lastClaim && new Date(lastClaim).setHours(0, 0, 0, 0) === today.getTime();
-        const currentDayOfMonth = now.getDate();
+        const hasClaimedToday = hasClaimOnCurrentCalendarDay(monthClaims, now, tz);
 
         const uniqueItemIds = Array.from(new Set(
             [
@@ -232,7 +228,7 @@ export async function GET(request: NextRequest) {
                 where: {
                     AccountID: userId,
                     purchaseYear: currentYear,
-                    purchaseMonth: currentMonth + 1
+                    purchaseMonth: calMonth
                 },
                 order: [['id', 'DESC']]
             });
@@ -242,12 +238,8 @@ export async function GET(request: NextRequest) {
         }
         const isPassActive = !!passRecord && new Date(passRecord.activeUntil).getTime() >= now.getTime();
 
-        // Calculate time until next reset (end of month)
-        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-        lastDayOfMonth.setHours(23, 59, 59, 999);
-
-        // Calculate the difference in milliseconds
-        const diffMs = lastDayOfMonth.getTime() - now.getTime();
+        // Time until next calendar month in login TZ (first instant of next month).
+        const diffMs = monthEnd.getTime() - now.getTime();
         
         // Convert to seconds and ensure it's positive
         const totalSeconds = Math.max(0, Math.floor(diffMs / 1000));
@@ -260,6 +252,7 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
+            calendarDayKey: getCalendarDayKey(now, tz),
             data: rewardsWithStatus,
             pass: {
                 isActive: isPassActive,

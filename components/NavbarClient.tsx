@@ -82,19 +82,14 @@ export default function NavbarClient() {
             const token = localStorage.getItem('authToken');
             if (!token) return;
 
-            const todayKey = new Date().toISOString().slice(0, 10);
-            const shownKey = `daily-login-auto-modal:${todayKey}`;
-            if (!ALWAYS_SHOW_DAILY_LOGIN_MODAL && sessionStorage.getItem(shownKey)) return;
-
             // Ensure logged-in state first in case cookie sync is still racing.
             const privateRes = await API.get('/private');
             if (privateRes.status !== 200 && privateRes.status !== 201) return;
             setMallpoints(Number(privateRes.data?.mallpoints ?? 0));
 
+            // Run on every page load / refresh so the server always applies today's check-in rules.
             const autoRes = await API.post('/daily-rewards/auto-checkin');
             const autoClaimed = !!autoRes.data?.autoClaimed;
-
-            if (!ALWAYS_SHOW_DAILY_LOGIN_MODAL && !autoClaimed) return;
 
             // Retry daily-rewards once if auth/cookie is still racing on initial mount.
             let rewardsRes = await API.get('/daily-rewards');
@@ -110,12 +105,18 @@ export default function NavbarClient() {
             setPassPrice(Number(rewardsRes.data?.pass?.price ?? 0));
             setClaimedDay(Number(autoRes.data?.claim?.day ?? 0));
             setClaimedAmount(Number(autoRes.data?.claim?.amount ?? 0));
-            // In test mode always show modal once per page load, even when rewards fetch fails.
-            if (ALWAYS_SHOW_DAILY_LOGIN_MODAL || rewardsRes.status === 200) {
+
+            // Test mode: show modal every load even if /daily-rewards fails.
+            if (ALWAYS_SHOW_DAILY_LOGIN_MODAL) {
                 setModalOpen(true);
+                return;
             }
-            if (!ALWAYS_SHOW_DAILY_LOGIN_MODAL && rewardsRes.status === 200) {
-                sessionStorage.setItem(shownKey, '1');
+
+            if (rewardsRes.status !== 200) return;
+
+            // Modal only when the server actually claimed this load (DB is source of truth).
+            if (autoClaimed) {
+                setModalOpen(true);
             }
         };
 
