@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Op } from "sequelize";
+import { Op, col, fn } from "sequelize";
 import { news_posts } from "@/lib/models/news_posts";
+import { news_post_items } from "@/lib/models/news_post_items";
 import { news_post_claims } from "@/lib/models/news_post_claims";
 import { getUserFromRequest } from "@/lib/auth/utils";
-import { dbod_acc } from "@/lib/database/connection";
 import { parseNewsCategoryParam, isNewsCategory } from "@/lib/utils/news-shared";
 
 export async function GET(request: NextRequest) {
@@ -27,24 +27,29 @@ export async function GET(request: NextRequest) {
 
         const rows = await news_posts.findAll({
             where,
-            attributes: {
-                include: [
-                    [
-                        dbod_acc.literal(
-                            "(SELECT COUNT(*) FROM news_post_items WHERE news_post_items.newsPostId = news_posts.id)"
-                        ),
-                        "rewardCount",
-                    ],
-                ],
-            },
             order: [["updatedAt", "DESC"]],
             limit: pageSize,
             offset: (page - 1) * pageSize,
         });
 
+        const postIds = rows.map((r) => Number(r.id));
+        const rewardCountByPostId = new Map<number, number>();
+        if (postIds.length > 0) {
+            const aggRows = await news_post_items.findAll({
+                attributes: ["newsPostId", [fn("COUNT", col("id")), "rewardCount"]],
+                where: { newsPostId: { [Op.in]: postIds } },
+                group: ["newsPostId"],
+                raw: true,
+            });
+            for (const row of aggRows as unknown as { newsPostId: number; rewardCount: string | number }[]) {
+                rewardCountByPostId.set(Number(row.newsPostId), Number(row.rewardCount));
+            }
+        }
+
         const items = rows.map((row) => {
             const plain = row.get({ plain: true }) as unknown as Record<string, unknown>;
-            const rewardCount = Number(plain.rewardCount ?? 0);
+            const id = Number(plain.id);
+            const rewardCount = rewardCountByPostId.get(id) ?? 0;
             return {
                 id: plain.id,
                 category: plain.category,
