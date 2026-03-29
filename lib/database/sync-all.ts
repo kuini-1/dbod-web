@@ -14,6 +14,9 @@ import cashshop_storage from '../models/cashshop_storage';
 import { server_status } from '../models/server_status';
 import { characters } from '../models/characters';
 import { Raffle, RaffleEntry, RaffleWinner } from '../models/raffle';
+import { news_posts } from '../models/news_posts';
+import { news_post_items } from '../models/news_post_items';
+import { news_post_claims } from '../models/news_post_claims';
 import type { ModelStatic, Model } from 'sequelize';
 
 const SEED_PACKAGES = [
@@ -105,6 +108,13 @@ export async function syncAll() {
     ]);
     console.log('Donation tier items and claims tables synced');
     console.log('Slot machine items table synced');
+
+    await Promise.all([
+        syncModelAdditiveOnly(news_posts),
+        syncModelAdditiveOnly(news_post_items),
+        syncModelAdditiveOnly(news_post_claims),
+    ]);
+    console.log('News posts, items, and claims tables synced');
 
     await syncModelAdditiveOnly(popup_banners);
     console.log('Popup banners table created or updated successfully');

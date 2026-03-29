@@ -36,3 +36,7 @@ yarn-error.log*
 next-env.d.ts
 /wps
 /.wsl-node
+
+# User-uploaded news images (keep directory via .gitkeep)
+/public/uploads/news/*
+!/public/uploads/news/.gitkeep

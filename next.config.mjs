@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // BlockNote + ProseMirror are not yet compatible with React 19 StrictMode double-mounting.
+  reactStrictMode: false,
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
@@ -54,6 +56,7 @@ const nextConfig = {
   },
   // Emit the minimal server bundle for easy deployment
   output: 'standalone',
+  transpilePackages: ['@blocknote/core', '@blocknote/react', '@blocknote/ariakit'],
 };
 
 export default nextConfig;

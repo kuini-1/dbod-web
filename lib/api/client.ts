@@ -63,4 +63,58 @@ export const API = {
             statusText: response.statusText,
         };
     },
+
+    patch: async (url: string, body?: unknown, options?: RequestInit) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(options?.headers as Record<string, string> || {}),
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${getBaseURL()}${url}`, {
+            ...options,
+            method: 'PATCH',
+            headers,
+            credentials: 'include',
+            body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        return {
+            status: response.status,
+            data,
+            statusText: response.statusText,
+        };
+    },
+
+    delete: async (url: string, options?: RequestInit) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+        const headers: Record<string, string> = {
+            ...(options?.headers as Record<string, string> || {}),
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${getBaseURL()}${url}`, {
+            ...options,
+            method: 'DELETE',
+            headers,
+            credentials: 'include',
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        return {
+            status: response.status,
+            data,
+            statusText: response.statusText,
+        };
+    },
 };

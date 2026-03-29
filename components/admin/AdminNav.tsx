@@ -16,7 +16,8 @@ export default function AdminNav() {
     { href: '/admin/donation-tiers', label: t('adminDonationTiers') },
     { href: '/admin/slot-machine', label: t('adminSlotMachine') },
     { href: '/admin/server', label: t('adminServer') },
-    { href: '/admin/wps', label: t('adminWpsScripts') }
+    { href: '/admin/wps', label: t('adminWpsScripts') },
+    { href: '/admin/news', label: t('adminNews') }
   ];
 
   return (

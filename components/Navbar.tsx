@@ -22,6 +22,7 @@ export function Navbar() {
     const [isLoading, setIsLoading] = useState(true);
     const [hasProfileNotification, setHasProfileNotification] = useState(false);
     const [hasDonateNotification, setHasDonateNotification] = useState(false);
+    const [hasNewsNotification, setHasNewsNotification] = useState(false);
 
     const checkAuth = async () => {
         setIsLoading(true);
@@ -31,10 +32,11 @@ export function Navbar() {
                 setIsLoggedIn(true);
                 setUser(res.data);
 
-                const [charactersRes, donationInfoRes, donationTiersRes] = await Promise.allSettled([
+                const [charactersRes, donationInfoRes, donationTiersRes, newsUnclaimedRes] = await Promise.allSettled([
                     API.get('/characters'),
                     API.get('/donation-info'),
                     API.get('/donation-tiers'),
+                    API.get('/news/unclaimed', { cache: 'no-store' }),
                 ]);
 
                 const characters = charactersRes.status === 'fulfilled'
@@ -58,19 +60,26 @@ export function Navbar() {
                     return tierAmount <= totalDonated && !claimedTierIds.includes(tierId);
                 });
 
+                const newsUnclaimed =
+                    newsUnclaimedRes.status === 'fulfilled' &&
+                    Boolean(newsUnclaimedRes.value.data?.hasUnclaimed);
+
                 setHasProfileNotification(hasUpgradeableTokens);
                 setHasDonateNotification(hasClaimableTier);
+                setHasNewsNotification(newsUnclaimed);
             } else {
                 setIsLoggedIn(false);
                 setUser(null);
                 setHasProfileNotification(false);
                 setHasDonateNotification(false);
+                setHasNewsNotification(false);
             }
         } catch (error) {
             setIsLoggedIn(false);
             setUser(null);
             setHasProfileNotification(false);
             setHasDonateNotification(false);
+            setHasNewsNotification(false);
         } finally {
             setIsLoading(false);
         }
@@ -78,16 +87,30 @@ export function Navbar() {
 
     useEffect(() => {
         checkAuth();
-        
-        // Listen for custom login event
+
         const handleLogin = () => {
             checkAuth();
         };
-        
+
+        const handleNewsClaimed = () => {
+            void (async () => {
+                try {
+                    const res = await API.get('/news/unclaimed', { cache: 'no-store' });
+                    if (res.status === 200 && res.data?.success) {
+                        setHasNewsNotification(Boolean(res.data.hasUnclaimed));
+                    }
+                } catch {
+                    setHasNewsNotification(false);
+                }
+            })();
+        };
+
         window.addEventListener('user-logged-in', handleLogin);
-        
+        window.addEventListener('news-reward-claimed', handleNewsClaimed);
+
         return () => {
             window.removeEventListener('user-logged-in', handleLogin);
+            window.removeEventListener('news-reward-claimed', handleNewsClaimed);
         };
     }, [pathname]);
 
@@ -99,6 +122,7 @@ export function Navbar() {
             setUser(null);
             setHasProfileNotification(false);
             setHasDonateNotification(false);
+            setHasNewsNotification(false);
             router.push('/');
         } catch (error) {
             console.error('Logout error:', error);
@@ -117,8 +141,14 @@ export function Navbar() {
                             <Link href="/" className={`hover:text-red-400 transition-colors ${pathname === '/' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {t('navItemHome')}
                             </Link>
-                            <Link href="/news" className={`hover:text-red-400 transition-colors ${pathname === '/news' ? 'text-red-400' : 'text-stone-300'}`}>
-                                {t('navItemNews')}
+                            <Link
+                                href="/news"
+                                className={`hover:text-red-400 transition-colors ${pathname === '/news' || pathname?.startsWith('/news/') ? 'text-red-400' : 'text-stone-300'} flex items-center gap-2`}
+                            >
+                                <span>{t('navItemNews')}</span>
+                                {isLoggedIn && hasNewsNotification ? (
+                                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                                ) : null}
                             </Link>
                             <Link href="/donate" className={`hover:text-red-400 transition-colors ${pathname === '/donate' ? 'text-red-400' : 'text-stone-300'} flex items-center gap-2`}>
                                 <span>{t('navItemDonation')}</span>
