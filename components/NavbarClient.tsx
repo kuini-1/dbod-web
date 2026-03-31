@@ -116,7 +116,7 @@ export default function NavbarClient() {
             setMallpoints(Number(privateRes.data?.mallpoints ?? 0));
 
             // Run on every page load / refresh so the server always applies today's check-in rules.
-            const [autoRes, rewardsResFirst, eventAutoRes, eventResAfterAuto] = await Promise.all([
+            const [autoRes, eventAutoRes, rewardsResFirst, eventResAfterAuto] = await Promise.all([
                 API.post('/daily-rewards/auto-checkin'),
                 API.post('/event-daily-rewards/auto-checkin'),
                 API.get('/daily-rewards'),
