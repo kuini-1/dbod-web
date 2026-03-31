@@ -10,6 +10,11 @@ import { packages } from '../models/packages';
 import items from '../models/items';
 import { donations } from '../models/donations';
 import { daily_rewards, daily_reward_claims, daily_checkin_passes } from '../models/daily_rewards';
+import {
+    event_daily_login_events,
+    event_daily_login_rewards,
+    event_daily_login_claims,
+} from '../models/event_daily_login';
 import cashshop_storage from '../models/cashshop_storage';
 import { server_status } from '../models/server_status';
 import { characters } from '../models/characters';
@@ -144,6 +149,9 @@ export async function syncAll() {
         syncModelAdditiveOnly(daily_rewards),
         syncModelAdditiveOnly(daily_reward_claims),
         syncModelAdditiveOnly(daily_checkin_passes),
+        syncModelAdditiveOnly(event_daily_login_events),
+        syncModelAdditiveOnly(event_daily_login_rewards),
+        syncModelAdditiveOnly(event_daily_login_claims),
         syncModelAdditiveOnly(cashshop_storage),
         syncModelAdditiveOnly(server_status),
     ]);

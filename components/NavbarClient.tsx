@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navbar } from './Navbar';
 import { API } from '@/lib/api/client';
 import DailyLoginAutoModal from './DailyLoginAutoModal';
+import EventDailyLoginModal, { type EventDailyApiPayload } from '@/components/EventDailyLoginModal';
 
 interface DailyReward {
     date: number;
@@ -22,6 +23,21 @@ async function delay(ms: number) {
     await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function parseEventDailyResponse(data: unknown): {
+    payload: EventDailyApiPayload | null;
+    shouldAutoOpen: boolean;
+} {
+    if (!data || typeof data !== 'object') return { payload: null, shouldAutoOpen: false };
+    const d = data as EventDailyApiPayload;
+    if (!d.success) return { payload: null, shouldAutoOpen: false };
+    if (d.hasActiveEvent === false) return { payload: d, shouldAutoOpen: false };
+    const rows = Array.isArray(d.data) ? d.data : [];
+    return {
+        payload: d,
+        shouldAutoOpen: rows.some((r) => r.available),
+    };
+}
+
 export default function NavbarClient() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalRewards, setModalRewards] = useState<DailyReward[]>([]);
@@ -32,6 +48,18 @@ export default function NavbarClient() {
     const [passPrice, setPassPrice] = useState(0);
     const [mallpoints, setMallpoints] = useState(0);
     const [buyingPass, setBuyingPass] = useState(false);
+    const [eventDailyPayload, setEventDailyPayload] = useState<EventDailyApiPayload | null>(null);
+    const [eventDailyModalOpen, setEventDailyModalOpen] = useState(false);
+    const [pendingEventAfterDailyClose, setPendingEventAfterDailyClose] = useState(false);
+
+    const refreshEventDailyPayload = useCallback(async () => {
+        const res = await API.get('/event-daily-rewards');
+        if (res.status === 200 && res.data && typeof res.data === 'object') {
+            setEventDailyPayload(res.data as EventDailyApiPayload);
+        } else {
+            setEventDailyPayload(null);
+        }
+    }, []);
 
     const openDailyLoginModal = async () => {
         const token = localStorage.getItem('authToken');
@@ -88,11 +116,16 @@ export default function NavbarClient() {
             setMallpoints(Number(privateRes.data?.mallpoints ?? 0));
 
             // Run on every page load / refresh so the server always applies today's check-in rules.
-            const autoRes = await API.post('/daily-rewards/auto-checkin');
+            const [autoRes, rewardsResFirst, eventAutoRes, eventResAfterAuto] = await Promise.all([
+                API.post('/daily-rewards/auto-checkin'),
+                API.post('/event-daily-rewards/auto-checkin'),
+                API.get('/daily-rewards'),
+                API.get('/event-daily-rewards'),
+            ]);
             const autoClaimed = !!autoRes.data?.autoClaimed;
+            const eventAutoClaimed = !!eventAutoRes.data?.autoClaimed;
 
-            // Retry daily-rewards once if auth/cookie is still racing on initial mount.
-            let rewardsRes = await API.get('/daily-rewards');
+            let rewardsRes = rewardsResFirst;
             if (rewardsRes.status !== 200) {
                 await delay(250);
                 rewardsRes = await API.get('/daily-rewards');
@@ -106,6 +139,11 @@ export default function NavbarClient() {
             setClaimedDay(Number(autoRes.data?.claim?.day ?? 0));
             setClaimedAmount(Number(autoRes.data?.claim?.amount ?? 0));
 
+            const { payload: eventPayload, shouldAutoOpen: shouldShowEvent } = parseEventDailyResponse(
+                eventResAfterAuto.data
+            );
+            setEventDailyPayload(eventPayload);
+
             // Test mode: show modal every load even if /daily-rewards fails.
             if (ALWAYS_SHOW_DAILY_LOGIN_MODAL) {
                 setModalOpen(true);
@@ -114,9 +152,14 @@ export default function NavbarClient() {
 
             if (rewardsRes.status !== 200) return;
 
-            // Modal only when the server actually claimed this load (DB is source of truth).
-            if (autoClaimed) {
+            // Monthly modal when auto-claimed; event modal when a step is claimable (same load).
+            if (autoClaimed && (shouldShowEvent || eventAutoClaimed)) {
+                setPendingEventAfterDailyClose(true);
                 setModalOpen(true);
+            } else if (autoClaimed) {
+                setModalOpen(true);
+            } else if (shouldShowEvent || eventAutoClaimed) {
+                setEventDailyModalOpen(true);
             }
         };
 
@@ -132,9 +175,19 @@ export default function NavbarClient() {
             });
         };
 
+        const handleOpenEventDailyLoginModal = () => {
+            refreshEventDailyPayload()
+                .then(() => setEventDailyModalOpen(true))
+                .catch(() => {});
+        };
+
         window.addEventListener('open-daily-login-modal', handleOpenDailyLoginModal);
-        return () => window.removeEventListener('open-daily-login-modal', handleOpenDailyLoginModal);
-    }, []);
+        window.addEventListener('open-event-daily-login-modal', handleOpenEventDailyLoginModal);
+        return () => {
+            window.removeEventListener('open-daily-login-modal', handleOpenDailyLoginModal);
+            window.removeEventListener('open-event-daily-login-modal', handleOpenEventDailyLoginModal);
+        };
+    }, [refreshEventDailyPayload]);
 
     const handlePurchasePass = async () => {
         try {
@@ -162,7 +215,13 @@ export default function NavbarClient() {
             <Navbar />
             <DailyLoginAutoModal
                 isOpen={modalOpen}
-                onClose={() => setModalOpen(false)}
+                onClose={() => {
+                    setModalOpen(false);
+                    if (pendingEventAfterDailyClose) {
+                        setPendingEventAfterDailyClose(false);
+                        setEventDailyModalOpen(true);
+                    }
+                }}
                 rewards={modalRewards}
                 resetDays={modalResetDays}
                 claimedDay={claimedDay}
@@ -176,6 +235,13 @@ export default function NavbarClient() {
                 purchaseButtonText="Purchase Now"
                 passActiveText="Pass Active"
                 purchasingText="Purchasing..."
+            />
+            <EventDailyLoginModal
+                isOpen={eventDailyModalOpen}
+                onClose={() => setEventDailyModalOpen(false)}
+                payload={eventDailyPayload}
+                loading={false}
+                onRefresh={refreshEventDailyPayload}
             />
         </>
     );

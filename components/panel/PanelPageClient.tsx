@@ -57,7 +57,17 @@ interface DonationLogProps {
     mallpoints: number;
 }
 
-const UserInfo = ({ username, email, cp, onChangePassword }: { username: string; email: string; cp: number; onChangePassword: () => void }) => {
+const UserInfo = ({
+    username,
+    email,
+    cp,
+    onChangePassword
+}: {
+    username: string;
+    email: string;
+    cp: number;
+    onChangePassword: () => void;
+}) => {
     const { locale } = useLocale();
     const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     return (

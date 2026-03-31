@@ -145,8 +145,10 @@ export default function EventSchedulePage() {
     const { locale } = useLocale();
     const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
     const [now, setNow] = useState(() => new Date());
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -215,6 +217,15 @@ export default function EventSchedulePage() {
     return (
         <div className="text-white bg-stone-900 min-h-screen px-4 py-16">
             <div className="max-w-6xl mx-auto">
+                <div className="mb-6">
+                    <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new Event('open-event-daily-login-modal'))}
+                        className="rounded-lg border border-purple-500/50 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-200 hover:bg-purple-500/20 transition-colors duration-200 cursor-pointer"
+                    >
+                        {tx('Open Event Daily Login', '이벤트 출석 열기')}
+                    </button>
+                </div>
                 <div className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/15 to-stone-800/80 p-6 md:p-7 mb-8">
                     <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
                         <div>
@@ -231,7 +242,7 @@ export default function EventSchedulePage() {
                         <div className="inline-flex flex-col items-start md:items-end gap-1 text-sm">
                             <span className="text-stone-400">{tx('Current KST', '현재 KST')}</span>
                             <span className="font-mono text-red-200 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-1.5">
-                                {currentKstText}
+                                {isMounted ? currentKstText : '--:--:--'}
                             </span>
                         </div>
                     </div>
