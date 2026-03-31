@@ -62,9 +62,6 @@ export default function NavbarClient() {
     }, []);
 
     const openDailyLoginModal = async () => {
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-
         const privateRes = await API.get('/private');
         if (privateRes.status !== 200 && privateRes.status !== 201) return;
         setMallpoints(Number(privateRes.data?.mallpoints ?? 0));
@@ -107,9 +104,6 @@ export default function NavbarClient() {
 
     useEffect(() => {
         const runAutoCheckin = async () => {
-            const token = localStorage.getItem('authToken');
-            if (!token) return;
-
             // Ensure logged-in state first in case cookie sync is still racing.
             const privateRes = await API.get('/private');
             if (privateRes.status !== 200 && privateRes.status !== 201) return;
