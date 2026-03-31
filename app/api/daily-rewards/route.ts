@@ -227,8 +227,7 @@ export async function GET(request: NextRequest) {
             passRecord = await daily_checkin_passes.findOne({
                 where: {
                     AccountID: userId,
-                    purchaseYear: currentYear,
-                    purchaseMonth: calMonth
+                    activeUntil: { [Op.gte]: now }
                 },
                 order: [['id', 'DESC']]
             });
@@ -274,3 +273,4 @@ export async function GET(request: NextRequest) {
         }, { status: 500 });
     }
 }
+

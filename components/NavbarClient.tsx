@@ -110,16 +110,15 @@ export default function NavbarClient() {
             setMallpoints(Number(privateRes.data?.mallpoints ?? 0));
 
             // Run on every page load / refresh so the server always applies today's check-in rules.
-            const [autoRes, eventAutoRes, rewardsResFirst, eventResAfterAuto] = await Promise.all([
+            const [autoRes, eventAutoRes] = await Promise.all([
                 API.post('/daily-rewards/auto-checkin'),
                 API.post('/event-daily-rewards/auto-checkin'),
-                API.get('/daily-rewards'),
-                API.get('/event-daily-rewards'),
             ]);
             const autoClaimed = !!autoRes.data?.autoClaimed;
             const eventAutoClaimed = !!eventAutoRes.data?.autoClaimed;
 
-            let rewardsRes = rewardsResFirst;
+            // Always fetch monthly rewards after auto-checkin to avoid stale pre-claim snapshots.
+            let rewardsRes = await API.get('/daily-rewards');
             if (rewardsRes.status !== 200) {
                 await delay(250);
                 rewardsRes = await API.get('/daily-rewards');
@@ -133,9 +132,10 @@ export default function NavbarClient() {
             setClaimedDay(Number(autoRes.data?.claim?.day ?? 0));
             setClaimedAmount(Number(autoRes.data?.claim?.amount ?? 0));
 
-            const { payload: eventPayload, shouldAutoOpen: shouldShowEvent } = parseEventDailyResponse(
-                eventResAfterAuto.data
-            );
+            // Same for event rewards: read state after event auto-checkin.
+            const eventResAfterAuto = await API.get('/event-daily-rewards');
+            const { payload: eventPayload, shouldAutoOpen: shouldShowEvent } =
+                parseEventDailyResponse(eventResAfterAuto.data);
             setEventDailyPayload(eventPayload);
 
             // Test mode: show modal every load even if /daily-rewards fails.

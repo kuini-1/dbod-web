@@ -197,17 +197,32 @@ export default function DailyLoginAutoModal(props: DailyLoginAutoModalProps) {
                                     </div>
                                 </div>
                                 {showPurchaseButton ? (
-                                    <button
-                                        onClick={handlePurchaseClick}
-                                        disabled={passIsActive || buyingPass || mallpoints < passPrice}
-                                        className="mt-3 w-full py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border border-red-300/45 shadow-[0_6px_14px_rgba(239,68,68,0.25)]"
-                                    >
-                                        {buyingPass
-                                            ? (purchasingText ?? tx('Purchasing...', '구매 중...'))
-                                            : passIsActive
-                                            ? (passActiveText ?? tx('Pass Active', '패스 활성'))
-                                            : `${purchaseButtonText ?? tx('Purchase Now', '지금 구매')} (${passPrice} CP)`}
-                                    </button>
+                                    <>
+                                        <button
+                                            onClick={handlePurchaseClick}
+                                            disabled={passIsActive || buyingPass || mallpoints < passPrice}
+                                            className="mt-3 w-full py-2.5 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all duration-300 cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border border-red-300/45 shadow-[0_6px_14px_rgba(239,68,68,0.25)]"
+                                        >
+                                            {buyingPass
+                                                ? (purchasingText ?? tx('Purchasing...', '구매 중...'))
+                                                : passIsActive
+                                                ? (passActiveText ?? tx('Pass Active', '패스 활성'))
+                                                : `${purchaseButtonText ?? tx('Purchase Now', '지금 구매')} (${passPrice} CP)`}
+                                        </button>
+                                        {!passIsActive && !buyingPass && mallpoints < passPrice ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (typeof window !== 'undefined') {
+                                                        window.location.href = '/donate';
+                                                    }
+                                                }}
+                                                className="mt-2 w-full py-2 rounded-lg font-semibold text-sm text-red-100 bg-black/30 hover:bg-black/45 transition-all duration-300 cursor-pointer border border-red-400/30"
+                                            >
+                                                {tx('Not enough CP? Donate now', 'CP가 부족한가요? 지금 후원하기')}
+                                            </button>
+                                        ) : null}
+                                    </>
                                 ) : null}
                             </div>
                         </div>

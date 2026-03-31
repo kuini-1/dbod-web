@@ -57,6 +57,22 @@
 - Example: Correct: disabled cards can keep visual disabled style without `disabled:cursor-not-allowed`.
 - Last updated: 2026-03-31
 
+## [Website] — Monthly Pass Insufficient CP CTA
+- Importance: 🟢 LOW
+- Correction count: 1
+- Rule: In monthly daily login modal, show a donate button under purchase when CP is insufficient.
+- Context: Website
+- Example: Correct: secondary CTA appears only when `mallpoints < passPrice`.
+- Last updated: 2026-03-31
+
+## [Website] — Check-in Pass Persistence
+- Importance: 🟢 LOW
+- Correction count: 1
+- Rule: Check-in pass must be recognized by activeUntil (not month-only purchase keys) so existing active users keep benefits.
+- Context: Website
+- Example: Correct: pass lookups use `activeUntil >= now`; wrong: filter by `purchaseYear/purchaseMonth` only.
+- Last updated: 2026-03-31
+
 ---
 
 ## 📊 Correction Log

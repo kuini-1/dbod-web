@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Op } from 'sequelize';
 import { getUserFromRequest } from '@/lib/auth/utils';
 import { accounts } from '@/lib/models/accounts';
 import { daily_checkin_passes } from '@/lib/models/daily_rewards';
@@ -21,21 +22,20 @@ export async function POST(request: NextRequest) {
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
-        const monthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
+        const perpetualEnd = new Date('2099-12-31T23:59:59.999Z');
 
         const result = await dbod_acc.transaction(async (transaction) => {
             const existingPass = await daily_checkin_passes.findOne({
                 where: {
                     AccountID: user.AccountID,
-                    purchaseYear: currentYear,
-                    purchaseMonth: currentMonth
+                    activeUntil: { [Op.gte]: now }
                 },
                 transaction,
                 lock: true
             });
 
             if (existingPass && new Date(existingPass.activeUntil).getTime() >= now.getTime()) {
-                return { ok: false as const, status: 400, message: 'Check-in Pass already active for this month' };
+                return { ok: false as const, status: 400, message: 'Check-in Pass already active' };
             }
 
             const account = await accounts.findByPk(user.AccountID, { transaction, lock: true });
@@ -57,20 +57,13 @@ export async function POST(request: NextRequest) {
             const updatedPoints = Math.max(0, currentPoints - CHECKIN_PASS_PRICE);
             await account.update({ mallpoints: updatedPoints }, { transaction });
 
-            if (existingPass) {
-                await existingPass.update({
-                    activeFrom: now,
-                    activeUntil: monthEnd
-                }, { transaction });
-            } else {
-                await daily_checkin_passes.create({
-                    AccountID: user.AccountID,
-                    purchaseYear: currentYear,
-                    purchaseMonth: currentMonth,
-                    activeFrom: now,
-                    activeUntil: monthEnd
-                }, { transaction });
-            }
+            await daily_checkin_passes.create({
+                AccountID: user.AccountID,
+                purchaseYear: currentYear,
+                purchaseMonth: currentMonth,
+                activeFrom: now,
+                activeUntil: perpetualEnd
+            }, { transaction });
 
             return {
                 ok: true as const,
@@ -79,7 +72,7 @@ export async function POST(request: NextRequest) {
                 mallpoints: updatedPoints,
                 pass: {
                     isActive: true,
-                    expiresAt: monthEnd.toISOString(),
+                    expiresAt: perpetualEnd.toISOString(),
                     price: CHECKIN_PASS_PRICE
                 }
             };
@@ -100,3 +93,4 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Failed to purchase check-in pass' }, { status: 500 });
     }
 }
+
