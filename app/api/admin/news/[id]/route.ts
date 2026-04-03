@@ -8,9 +8,14 @@ import { news_post_claims } from "@/lib/models/news_post_claims";
 import { isNewsCategory } from "@/lib/utils/news-shared";
 import { dbod_acc } from "@/lib/database/connection";
 import { enrichTblidxList, formatRewardLine } from "@/lib/cashshop/enrichByTblidx";
+import { isAdminFullGm, isAdminPanelGm } from "@/lib/auth/admin-gm";
 
-function assertGm(user: Awaited<ReturnType<typeof getUserFromRequest>>) {
-    return user && Number(user.isGm) === 10;
+function assertNewsRead(user: Awaited<ReturnType<typeof getUserFromRequest>>) {
+    return user && isAdminPanelGm(user.isGm);
+}
+
+function assertNewsWrite(user: Awaited<ReturnType<typeof getUserFromRequest>>) {
+    return user && isAdminFullGm(user.isGm);
 }
 
 type RewardLineInput = { tblidx: number; amount: number; sortOrder?: number };
@@ -37,7 +42,7 @@ function normalizeRewardLines(raw: unknown): RewardLineInput[] {
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         const user = await getUserFromRequest(request);
-        if (!assertGm(user)) {
+        if (!assertNewsRead(user)) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
 
@@ -111,7 +116,7 @@ async function deleteUploadedImageIfOwned(imageUrl: string | null) {
 export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         const user = await getUserFromRequest(request);
-        if (!assertGm(user)) {
+        if (!assertNewsWrite(user)) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
 
@@ -212,7 +217,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
 export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
     try {
         const user = await getUserFromRequest(request);
-        if (!assertGm(user)) {
+        if (!assertNewsWrite(user)) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
 

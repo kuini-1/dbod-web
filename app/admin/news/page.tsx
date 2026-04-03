@@ -20,6 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useAdminGm } from '@/components/admin/AdminGmContext';
 
 type RewardLine = { tblidx: number; amount: number; sortOrder: number };
 
@@ -108,7 +109,9 @@ function draftToPayload(d: Draft) {
 }
 
 export default function AdminNewsPage() {
-    const { t } = useLocale();
+    const { t, locale } = useLocale();
+    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+    const { isNewsViewerOnly } = useAdminGm();
     const [posts, setPosts] = useState<NewsPostRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -274,17 +277,26 @@ export default function AdminNewsPage() {
               : 'kr-idle';
 
     return (
-        <AdminShell title={t('adminNews')} subtitle={t('adminNewsSubtitle')}>
+        <AdminShell
+            title={t('adminNews')}
+            subtitle={
+                isNewsViewerOnly
+                    ? tx('View only — you cannot create or edit posts.', '조회 전용 — 게시물을 만들거나 수정할 수 없습니다.')
+                    : t('adminNewsSubtitle')
+            }
+        >
             <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(260px,17rem)_minmax(0,1fr)]">
                 <AdminCard title={t('adminNewsPostList')} className="min-w-0">
-                    <Button
-                        type="button"
-                        onClick={selectNew}
-                        className="mb-4 w-full gap-2 bg-red-600 text-white hover:bg-red-500"
-                    >
-                        <Plus className="h-4 w-4" />
-                        {t('adminNewsNew')}
-                    </Button>
+                    {!isNewsViewerOnly ? (
+                        <Button
+                            type="button"
+                            onClick={selectNew}
+                            className="mb-4 w-full gap-2 bg-red-600 text-white hover:bg-red-500"
+                        >
+                            <Plus className="h-4 w-4" />
+                            {t('adminNewsNew')}
+                        </Button>
+                    ) : null}
                     {loading ? (
                         <p className="text-sm text-white/50">…</p>
                     ) : (
@@ -312,7 +324,13 @@ export default function AdminNewsPage() {
                 </AdminCard>
 
                 <AdminCard
-                    title={selectedId === 'new' ? t('adminNewsNew') : t('adminNewsEdit')}
+                    title={
+                        isNewsViewerOnly
+                            ? tx('View post', '게시물 보기')
+                            : selectedId === 'new'
+                              ? t('adminNewsNew')
+                              : t('adminNewsEdit')
+                    }
                     className="min-w-0 w-full"
                 >
                     {selectedId === null ? (
@@ -323,6 +341,7 @@ export default function AdminNewsPage() {
                                 <Label className="text-white/70">{t('newsCategory')}</Label>
                                 <Select
                                     value={draft.category}
+                                    disabled={isNewsViewerOnly}
                                     onValueChange={(v) =>
                                         setDraft((d) => ({
                                             ...d,
@@ -346,6 +365,7 @@ export default function AdminNewsPage() {
                                 <Input
                                     id="news-title-en"
                                     value={draft.title_en}
+                                    readOnly={isNewsViewerOnly}
                                     onChange={(e) => setDraft((d) => ({ ...d, title_en: e.target.value }))}
                                     className={adminFieldClass}
                                 />
@@ -357,6 +377,7 @@ export default function AdminNewsPage() {
                                 <Input
                                     id="news-title-kr"
                                     value={draft.title_kr}
+                                    readOnly={isNewsViewerOnly}
                                     onChange={(e) => setDraft((d) => ({ ...d, title_kr: e.target.value }))}
                                     className={adminFieldClass}
                                 />
@@ -368,6 +389,7 @@ export default function AdminNewsPage() {
                                     key={blockNoteKeyEn}
                                     initialStored={draft.body_md_en}
                                     onChangeStored={(next) => setDraft((d) => ({ ...d, body_md_en: next }))}
+                                    editable={!isNewsViewerOnly}
                                     theme="dark"
                                 />
                             </div>
@@ -377,6 +399,7 @@ export default function AdminNewsPage() {
                                     key={blockNoteKeyKr}
                                     initialStored={draft.body_md_kr}
                                     onChangeStored={(next) => setDraft((d) => ({ ...d, body_md_kr: next }))}
+                                    editable={!isNewsViewerOnly}
                                     theme="dark"
                                 />
                             </div>
@@ -390,17 +413,19 @@ export default function AdminNewsPage() {
                                         <Image src={draft.image_url} alt="" fill className="object-cover" unoptimized />
                                     </div>
                                 ) : null}
-                                <Input
-                                    id="news-header-image"
-                                    type="file"
-                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                    disabled={uploading}
-                                    onChange={(e) => handleUpload(e.target.files?.[0] || null)}
-                                    className={cn(
-                                        adminFieldClass,
-                                        'cursor-pointer file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:text-white file:hover:bg-white/15'
-                                    )}
-                                />
+                                {!isNewsViewerOnly ? (
+                                    <Input
+                                        id="news-header-image"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        disabled={uploading}
+                                        onChange={(e) => handleUpload(e.target.files?.[0] || null)}
+                                        className={cn(
+                                            adminFieldClass,
+                                            'cursor-pointer file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-white/10 file:px-3 file:py-2 file:text-sm file:text-white file:hover:bg-white/15'
+                                        )}
+                                    />
+                                ) : null}
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -408,6 +433,7 @@ export default function AdminNewsPage() {
                                     id="news-active"
                                     type="checkbox"
                                     checked={draft.active}
+                                    disabled={isNewsViewerOnly}
                                     onChange={(e) => setDraft((d) => ({ ...d, active: e.target.checked }))}
                                     className="h-4 w-4 rounded border-white/30 bg-stone-900 text-red-600 accent-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-stone-950"
                                 />
@@ -419,15 +445,17 @@ export default function AdminNewsPage() {
                             <div className="rounded-xl border border-white/10 bg-black/30 p-4">
                                 <div className="mb-2 flex items-center justify-between">
                                     <span className="text-sm font-medium text-white/80">{t('adminNewsRewards')}</span>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={addRewardLine}
-                                        className="h-8 px-2 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                                    >
-                                        + {t('adminNewsAddLine')}
-                                    </Button>
+                                    {!isNewsViewerOnly ? (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={addRewardLine}
+                                            className="h-8 px-2 text-xs text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                        >
+                                            + {t('adminNewsAddLine')}
+                                        </Button>
+                                    ) : null}
                                 </div>
                                 <div className="flex flex-col gap-2">
                                     {draft.rewardLines.map((line, idx) => (
@@ -435,45 +463,52 @@ export default function AdminNewsPage() {
                                             <Input
                                                 placeholder="tblidx"
                                                 value={line.tblidx}
+                                                readOnly={isNewsViewerOnly}
                                                 onChange={(e) => updateRewardLine(idx, 'tblidx', e.target.value)}
                                                 className={cn(adminFieldClass, 'h-9 w-28 text-xs')}
                                             />
                                             <Input
                                                 placeholder="amount"
                                                 value={line.amount}
+                                                readOnly={isNewsViewerOnly}
                                                 onChange={(e) => updateRewardLine(idx, 'amount', e.target.value)}
                                                 className={cn(adminFieldClass, 'h-9 w-24 text-xs')}
                                             />
                                             <Input
                                                 placeholder="sort"
                                                 value={line.sortOrder}
+                                                readOnly={isNewsViewerOnly}
                                                 onChange={(e) => updateRewardLine(idx, 'sortOrder', e.target.value)}
                                                 className={cn(adminFieldClass, 'h-9 w-20 text-xs')}
                                             />
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => removeRewardLine(idx)}
-                                                className="shrink-0 text-red-400 hover:bg-red-500/10 hover:text-red-300"
-                                                aria-label="Remove"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {!isNewsViewerOnly ? (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => removeRewardLine(idx)}
+                                                    className="shrink-0 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                                    aria-label="Remove"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            ) : null}
                                         </div>
                                     ))}
                                 </div>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                <Button
-                                    type="button"
-                                    disabled={saving}
-                                    onClick={save}
-                                    className="bg-red-600 text-white hover:bg-red-500"
-                                >
-                                    {t('adminNewsSave')}
-                                </Button>
+                                {!isNewsViewerOnly ? (
+                                    <Button
+                                        type="button"
+                                        disabled={saving}
+                                        onClick={save}
+                                        className="bg-red-600 text-white hover:bg-red-500"
+                                    >
+                                        {t('adminNewsSave')}
+                                    </Button>
+                                ) : null}
                                 {typeof selectedId === 'number' ? (
                                     <Button
                                         type="button"
@@ -491,7 +526,7 @@ export default function AdminNewsPage() {
                                         <ExternalLink className="mr-2 h-4 w-4" />
                                         {t('adminNewsPreviewNewTab')}
                                     </Button>
-                                ) : (
+                                ) : !isNewsViewerOnly ? (
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -502,8 +537,8 @@ export default function AdminNewsPage() {
                                         <ExternalLink className="mr-2 h-4 w-4" />
                                         {t('adminNewsPreviewNewTab')}
                                     </Button>
-                                )}
-                                {typeof selectedId === 'number' ? (
+                                ) : null}
+                                {!isNewsViewerOnly && typeof selectedId === 'number' ? (
                                     <Button
                                         type="button"
                                         variant="outline"

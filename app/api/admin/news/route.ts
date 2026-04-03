@@ -4,9 +4,14 @@ import { news_posts } from "@/lib/models/news_posts";
 import { news_post_items } from "@/lib/models/news_post_items";
 import { isNewsCategory } from "@/lib/utils/news-shared";
 import { dbod_acc } from "@/lib/database/connection";
+import { isAdminFullGm, isAdminPanelGm } from "@/lib/auth/admin-gm";
 
-function assertGm(user: Awaited<ReturnType<typeof getUserFromRequest>>) {
-    return user && Number(user.isGm) === 10;
+function assertNewsRead(user: Awaited<ReturnType<typeof getUserFromRequest>>) {
+    return user && isAdminPanelGm(user.isGm);
+}
+
+function assertNewsWrite(user: Awaited<ReturnType<typeof getUserFromRequest>>) {
+    return user && isAdminFullGm(user.isGm);
 }
 
 type RewardLineInput = { tblidx: number; amount: number; sortOrder?: number };
@@ -58,7 +63,7 @@ async function attachItemsToPosts(postRows: { id: number }[]) {
 export async function GET(request: NextRequest) {
     try {
         const user = await getUserFromRequest(request);
-        if (!assertGm(user)) {
+        if (!assertNewsRead(user)) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
 
@@ -85,7 +90,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const user = await getUserFromRequest(request);
-        if (!assertGm(user)) {
+        if (!assertNewsWrite(user)) {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
         }
 

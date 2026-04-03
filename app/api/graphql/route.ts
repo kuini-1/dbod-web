@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import popup_banners from '../../../lib/models/popup_banners';
-import items from '../../../lib/models/items';
 import popup_banner_items from '../../../lib/models/popup_banner_items';
 import { packages } from '../../../lib/models/packages';
+import { loadCashshopItemMetaByIds } from '../../../lib/utils/load-cashshop-item-meta';
 
 type GraphQLRequestBody = {
   query?: string;
@@ -56,20 +56,12 @@ export async function POST(request: NextRequest) {
         })
       : [];
 
-    // 3) Load item catalog rows (batched)
+    // 3) Load item metadata from Supabase (same source as daily login)
     const tblidxs = Array.from(
       new Set(bannerItemRows.map((r: any) => r.tblidx).filter((x: any) => x !== undefined && x !== null))
     );
 
-    const itemRows = tblidxs.length
-      ? await items.findAll({
-          where: { tblidx: tblidxs },
-          raw: true,
-        })
-      : [];
-
-    const itemByTblidx = new Map<number, any>();
-    for (const it of itemRows as any[]) itemByTblidx.set(Number(it.tblidx), it);
+    const itemMetaById = await loadCashshopItemMetaByIds(tblidxs.map((v) => Number(v)));
 
     // Load packages for banners with packageId
     const packageIds = Array.from(new Set((banners as any[]).map((b) => b.packageId).filter(Boolean)));
@@ -83,16 +75,16 @@ export async function POST(request: NextRequest) {
     for (const row of bannerItemRows as any[]) {
       const bannerId = Number(row.bannerId);
       if (!itemsByBannerId.has(bannerId)) itemsByBannerId.set(bannerId, []);
-      const it = itemByTblidx.get(Number(row.tblidx));
+      const it = itemMetaById.get(Number(row.tblidx));
       itemsByBannerId.get(bannerId)!.push({
         tblidx: Number(row.tblidx),
         amount: Number(row.amount),
         sortOrder: row.sortOrder ?? 0,
         item: it
           ? {
-              tblidx: Number(it.tblidx),
-              name: safeLang === 'kr' ? (it.name_kr || it.name_en) : it.name_en,
-              iconUrl: it.iconFile ? `/event icons/${it.iconFile}` : null,
+              tblidx: Number(row.tblidx),
+              name: it.name || `Item ${row.tblidx}`,
+              iconUrl: it.iconUrl || null,
             }
           : {
               tblidx: Number(row.tblidx),

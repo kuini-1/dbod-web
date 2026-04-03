@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGem, faTimes, faGift, faClock, faBox, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/navigation';
-import CharacterSelect from './CharacterSelect';
 import { useLocale } from './LocaleProvider';
 
 interface PopupBanner {
@@ -29,13 +28,6 @@ interface CharacterModel {
     shortLabel: string;
 }
 
-interface Character {
-    CharID: number;
-    CharName: string;
-    Level: number;
-    Class: number;
-}
-
 interface BannerItem {
     tblidx: number;
     amount: number;
@@ -56,8 +48,8 @@ export default function PopupBanner() {
     const [isVisible, setIsVisible] = useState(false);
     const [isClosing, setIsClosing] = useState(false);
     const [selectedCharacter, setSelectedCharacter] = useState<{race: CharacterRace; gender: CharacterGender}>({ race: 'human', gender: 'male' });
-    const [selectedGameCharacter, setSelectedGameCharacter] = useState<Character | null>(null);
     const [isPurchasing, setIsPurchasing] = useState(false);
+    const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] = useState(false);
     const router = useRouter();
 
     // Character model options
@@ -68,6 +60,20 @@ export default function PopupBanner() {
         { race: 'majin', gender: 'female', label: 'Majin Female', shortLabel: 'Majin F' },
         { race: 'namekian', gender: 'male', label: 'Namekian', shortLabel: 'Namekian' },
     ];
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const isSuccess = params.get('success') === 'true';
+        const isBannerPurchase = params.get('bannerPurchase') === '1';
+        if (isSuccess && isBannerPurchase) {
+            setShowPurchaseSuccessModal(true);
+            params.delete('bannerPurchase');
+            const nextQuery = params.toString();
+            const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+            window.history.replaceState({}, '', nextUrl);
+        }
+    }, []);
 
     useEffect(() => {
         const fetchPopups = async () => {
@@ -152,14 +158,11 @@ export default function PopupBanner() {
     };
 
     const handlePurchase = async () => {
-        if (!selectedGameCharacter) {
-            alert(tx('Please select a character to receive the items.', '아이템을 받을 캐릭터를 선택하세요.'));
-            return;
-        }
-
         const currentPopup = popups[currentPopupIndex];
+        const hasPackagePurchase = !!currentPopup.packageId;
+        const hasPricePurchase = typeof currentPopup.price === 'number' && currentPopup.price > 0;
 
-        if (!currentPopup.packageId) {
+        if (!hasPackagePurchase && !hasPricePurchase) {
             alert(tx('This banner is not configured for purchase. Please contact support.', '이 배너는 구매 설정이 되어 있지 않습니다. 관리자에게 문의하세요.'));
             return;
         }
@@ -186,11 +189,11 @@ export default function PopupBanner() {
                 method: 'POST',
                 headers,
                 credentials: 'include',
-                body: JSON.stringify({ 
-                    packageId: currentPopup.packageId,
+                body: JSON.stringify({
+                    ...(hasPackagePurchase
+                        ? { packageId: currentPopup.packageId }
+                        : { amount: currentPopup.price }),
                     bannerId: currentPopup.id,
-                    characterId: selectedGameCharacter.CharID,
-                    characterName: selectedGameCharacter.CharName,
                     currency: 'usd', // PopupBanner is global; use USD by default
                 }),
             });
@@ -245,9 +248,10 @@ export default function PopupBanner() {
         return filenameMap[`${race}-${gender}`] || 'hm.png';
     };
 
-    if (popups.length === 0) return null;
+    if (popups.length === 0 && !showPurchaseSuccessModal) return null;
 
-    const currentPopup = popups[currentPopupIndex];
+    const hasPopup = popups.length > 0;
+    const currentPopup = hasPopup ? popups[currentPopupIndex] : null;
     const currentModel = characterModels.find(
         m => m.race === selectedCharacter.race && m.gender === selectedCharacter.gender
     ) || characterModels[0];
@@ -255,9 +259,43 @@ export default function PopupBanner() {
     // Get character preview image path - computed based on current selection
     // Add cache-busting query parameter to prevent stale image caching
     // Using popup ID and character selection ensures cache updates when needed
-    const characterImagePath = `/banner/${currentPopup.id}/${getCharacterImageFilename(selectedCharacter.race, selectedCharacter.gender)}?t=${currentPopup.id}-${selectedCharacter.race}-${selectedCharacter.gender}`;
+    const characterImagePath = currentPopup
+        ? `/banner/${currentPopup.id}/${getCharacterImageFilename(selectedCharacter.race, selectedCharacter.gender)}?t=${currentPopup.id}-${selectedCharacter.race}-${selectedCharacter.gender}`
+        : '';
 
     return (
+        <>
+        {showPurchaseSuccessModal && (
+            <div className="fixed inset-0 z-[10000]">
+                <div
+                    className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    onClick={() => setShowPurchaseSuccessModal(false)}
+                />
+                <div className="relative w-full h-full flex items-center justify-center p-4">
+                    <div className="relative w-full max-w-xl rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 shadow-2xl">
+                        <button
+                            onClick={() => setShowPurchaseSuccessModal(false)}
+                            className="absolute right-4 top-4 z-10 h-10 w-10 rounded-lg border border-slate-600/50 bg-slate-800/80 text-slate-300 transition-all duration-200 hover:scale-110 hover:bg-slate-700"
+                            aria-label={tx('Close', '닫기')}
+                        >
+                            <FontAwesomeIcon icon={faTimes} className="text-lg" />
+                        </button>
+                        <div className="pr-12">
+                            <h3 className="mb-3 text-2xl font-bold text-emerald-300">
+                                {tx('Purchase successful!', '구매가 완료되었습니다!')}
+                            </h3>
+                            <p className="text-base leading-relaxed text-slate-200">
+                                {tx(
+                                    'Your items are in Cashshop Storage. Please relog to see and claim them.',
+                                    '아이템은 캐시샵 보관함에 지급되었습니다. 재접속 후 확인 및 수령해주세요.'
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+        {hasPopup && currentPopup && (
         <div className={`fixed inset-0 z-[9999] ${isClosing ? 'pointer-events-none' : ''}`}>
             {/* Backdrop */}
             <div 
@@ -377,10 +415,7 @@ export default function PopupBanner() {
                                                 </div>
                                             </div>
                                             <div className="text-indigo-300 font-semibold">
-                                                <span>
-                                                    <span className="align-sub inline-block leading-none">x</span>
-                                                    {currentPopup.cashPoints}
-                                                </span>
+                                                {`x${currentPopup.cashPoints}`}
                                             </div>
                                         </div>
                                     )}
@@ -411,10 +446,7 @@ export default function PopupBanner() {
                                                 </div>
                                             </div>
                                             <div className="text-indigo-400 font-semibold">
-                                                <span>
-                                                    <span className="align-sub inline-block leading-none">x</span>
-                                                    {row.amount}
-                                                </span>
+                                                {`x${row.amount}`}
                                             </div>
                                         </div>
                                     ))}
@@ -424,23 +456,11 @@ export default function PopupBanner() {
                             {/* Purchase Section */}
                             <div className="p-6 border-t border-slate-700/50 bg-slate-900/30">
                                 <div className="space-y-4">
-                                    {/* Character Selection */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-2">
-                                            {tx('Select Character', '캐릭터 선택')}
-                                        </label>
-                                        <CharacterSelect
-                                            onSelect={(char) => setSelectedGameCharacter(char)}
-                                            selectedCharacter={selectedGameCharacter || undefined}
-                                            title={tx('Choose character', '캐릭터 선택')}
-                                        />
-                                    </div>
-
                                     {/* Price Display */}
                                     <div className="text-center pt-2">
                                         <div className="text-sm text-slate-400 mb-1">{tx('Special Offer', '특가 상품')}</div>
                                         <div className="text-3xl font-bold text-white">
-                                            {currentPopup.packageId && currentPopup.price != null
+                                            {currentPopup.price != null
                                                 ? `$${currentPopup.price.toFixed(2)} USD`
                                                 : tx('Contact support', '문의 필요')}
                                         </div>
@@ -449,7 +469,7 @@ export default function PopupBanner() {
                                     {/* Purchase Button */}
                                     <button
                                         onClick={handlePurchase}
-                                        disabled={isPurchasing || !selectedGameCharacter || !currentPopup.packageId}
+                                        disabled={isPurchasing}
                                         className="w-full h-14 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed rounded-lg font-semibold text-lg text-white flex items-center justify-center gap-2 border-0 outline-none focus:outline-none leading-none hover:shadow-lg hover:shadow-indigo-500/50 transition-all duration-200 cursor-pointer"
                                     >
                                             {isPurchasing ? (
@@ -485,5 +505,7 @@ export default function PopupBanner() {
                 </div>
             </div>
         </div>
+        )}
+        </>
     );
 }

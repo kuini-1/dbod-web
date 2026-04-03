@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import jwt from "jsonwebtoken";
 import { JWT_TOKEN } from "@/lib/auth/jwt";
 import { accounts } from "@/lib/models/accounts";
+import { isAdminPanelGm } from "@/lib/auth/admin-gm";
+import { AdminGmProvider } from "@/components/admin/AdminGmContext";
+import { AdminRouteGuard } from "@/components/admin/AdminRouteGuard";
 
 type JwtPayload = {
     subject?: string;
@@ -43,9 +46,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         raw: true,
     });
 
-    if (!account || Number(account.isGm) !== 10) {
+    const gm = Number(account?.isGm);
+    if (!account || !isAdminPanelGm(gm)) {
         redirect("/");
     }
 
-    return <>{children}</>;
+    return (
+        <AdminGmProvider isGm={gm}>
+            <AdminRouteGuard>{children}</AdminRouteGuard>
+        </AdminGmProvider>
+    );
 }

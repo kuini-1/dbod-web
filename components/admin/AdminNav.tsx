@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
+import { useAdminGm } from '@/components/admin/AdminGmContext';
 
 export default function AdminNav() {
   const pathname = usePathname();
   const { t } = useLocale();
+  const { isNewsViewerOnly } = useAdminGm();
   const navItems = [
     { href: '/admin', label: t('adminOverview') },
     { href: '/admin/players', label: t('adminPlayers') },
@@ -18,7 +20,7 @@ export default function AdminNav() {
     { href: '/admin/server', label: t('adminServer') },
     { href: '/admin/wps', label: t('adminWpsScripts') },
     { href: '/admin/news', label: t('adminNews') }
-  ];
+  ].filter((item) => !isNewsViewerOnly || item.href === '/admin/news');
 
   return (
     <nav className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-black/40 p-4 text-sm text-white/80">

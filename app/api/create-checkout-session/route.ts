@@ -9,7 +9,7 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2022
 // Currency config: methods + amount conversion from USD
 const CURRENCY_CONFIG: Record<string, { methods: string[]; rate: number; symbol: string }> = {
     usd: {
-        methods: ['card', 'alipay', 'wechat_pay', 'link', 'crypto'],
+        methods: ['card', 'link', 'crypto'],
         rate: 1,
         symbol: '$',
     },
@@ -83,9 +83,21 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        if (!Number.isFinite(amountUSDResolved) || amountUSDResolved <= 0) {
+            return NextResponse.json(
+                { error: 'Invalid amount' },
+                { status: 400 }
+            );
+        }
+
         // Convert to Stripe amount (smallest unit: cents for USD/EUR, centavos for BRL, whole KRW)
         const amount = Math.round(amountUSDResolved * config.rate * (currency === 'krw' ? 1 : 100));
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+        const isBannerPurchase = !!bannerId;
+        const successUrl = isBannerPurchase
+            ? `${baseUrl}/donate?success=true&bannerPurchase=1`
+            : `${baseUrl}/donate?success=true`;
 
         // Create Stripe Checkout Session
         const session = await stripe.checkout.sessions.create({
@@ -106,7 +118,7 @@ export async function POST(request: NextRequest) {
                 },
             ],
             mode: 'payment',
-            success_url: `${baseUrl}/donate?success=true`,
+            success_url: successUrl,
             cancel_url: `${baseUrl}/donate?canceled=true`,
             metadata: {
                 username: (user as { Username?: string; username?: string }).Username ?? (user as { Username?: string; username?: string }).username ?? 'unknown',

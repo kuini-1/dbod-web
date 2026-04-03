@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { accounts } from '../../../lib/models/accounts';
 import { donations } from '../../../lib/models/donations';
 import popup_banner_items from '../../../lib/models/popup_banner_items';
+import popup_banners from '../../../lib/models/popup_banners';
 import { packages } from '../../../lib/models/packages';
 import { addItemsToCashshop } from '../../../lib/utils/cashshop';
 import Stripe from 'stripe';
@@ -28,6 +29,42 @@ const calculateCashPointsLegacy = (amount: number, firstTime: boolean): number =
     const baseCP = LEGACY_AMOUNT_TO_CP[amount] ?? 0;
     return baseCP + (baseCP * BonusCP) + (firstTime ? baseCP : 0);
 };
+
+async function createDonationOnce(payload: {
+    Username: string;
+    OrderID: string;
+    Email: string;
+    Currency: string;
+    Value: number;
+    mallpoints: number;
+    packageId: number | null;
+}) {
+    const existing = await donations.findOne({
+        where: { OrderID: payload.OrderID },
+        raw: true
+    });
+    if (existing) return;
+    await donations.create(payload);
+}
+
+async function calculateCashPointsForPurchase(
+    firstTime: boolean,
+    packageIdRaw?: string,
+    bannerIdRaw?: string
+): Promise<number> {
+    if (bannerIdRaw) {
+        const bannerId = parseInt(bannerIdRaw, 10);
+        if (!isNaN(bannerId)) {
+            const banner = await popup_banners.findByPk(bannerId);
+            return Number((banner as any)?.cashPoints || 0);
+        }
+        return 0;
+    }
+    if (packageIdRaw && packageIdRaw !== 'custom') {
+        return calculateCashPointsFromPackage(parseInt(packageIdRaw, 10), firstTime);
+    }
+    return 0;
+}
 
 // GET handler for verifying webhook URL is reachable (e.g. curl https://your-domain/api/webhook)
 export async function GET() {
@@ -71,31 +108,31 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
         case 'checkout.session.completed':
             const session = event.data.object as Stripe.Checkout.Session;
-            
-            if (session.metadata?.username && session.payment_intent) {
-                // Retrieve the payment intent to get the amount
-                const paymentIntent = await stripe.paymentIntents.retrieve(
-                    typeof session.payment_intent === 'string' 
-                        ? session.payment_intent 
-                        : session.payment_intent.id
-                );
-                
+
+            if (session.metadata?.username) {
                 const user = await accounts.findOne({
                     where: { Username: session.metadata.username }
                 });
 
-                if(user && paymentIntent) {
+                if(user) {
+                    let paymentIntent: Stripe.PaymentIntent | null = null;
+                    if (session.payment_intent) {
+                        paymentIntent = await stripe.paymentIntents.retrieve(
+                            typeof session.payment_intent === 'string'
+                                ? session.payment_intent
+                                : session.payment_intent.id
+                        );
+                    }
                     const isFirstTime = user.donated === 0;
                     const amountCurrency = session.metadata?.amountCurrency || 'usd';
                     const amountInCents = amountCurrency === 'usd'
-                        ? paymentIntent.amount
+                        ? (paymentIntent?.amount ?? session.amount_total ?? 0)
                         : Math.round(parseFloat(session.metadata?.amount || '0') * 100);
-                    // CP from packageId when available; fallback to legacy amount-based for old sessions
+                    // Banner purchases use exact banner CP; non-banner keep package/legacy behavior.
                     const metaPackageId = session.metadata?.packageId;
-                    let cashPoints: number;
-                    if (metaPackageId && metaPackageId !== 'custom') {
-                        cashPoints = await calculateCashPointsFromPackage(parseInt(metaPackageId, 10), isFirstTime);
-                    } else {
+                    const bannerId = session.metadata?.bannerId;
+                    let cashPoints = await calculateCashPointsForPurchase(isFirstTime, metaPackageId, bannerId);
+                    if (!bannerId && (!metaPackageId || metaPackageId === 'custom')) {
                         cashPoints = calculateCashPointsLegacy(amountInCents, isFirstTime);
                     }
                     
@@ -109,9 +146,9 @@ export async function POST(request: NextRequest) {
                         ? parseInt(metaPackageId, 10)
                         : null;
 
-                    await donations.create({
+                    await createDonationOnce({
                         Username: session.metadata.username,
-                        OrderID: paymentIntent.id,
+                        OrderID: paymentIntent?.id || session.id,
                         Email: session.customer_email || session.customer_details?.email || '',
                         Currency: amountCurrency,
                         Value: valueUsd,
@@ -120,7 +157,6 @@ export async function POST(request: NextRequest) {
                     });
 
                     // Check if this is a banner purchase (has bannerId in metadata)
-                    const bannerId = session.metadata?.bannerId;
                     if (bannerId) {
                         try {
                             // Get banner items
@@ -165,7 +201,12 @@ export async function POST(request: NextRequest) {
 
                 if(user) {
                     const isFirstTime = user.donated === 0;
-                    const cashPoints = calculateCashPointsLegacy(paymentIntent.amount, isFirstTime);
+                    const metaPackageId = paymentIntent.metadata?.packageId;
+                    const bannerId = paymentIntent.metadata?.bannerId;
+                    let cashPoints = await calculateCashPointsForPurchase(isFirstTime, metaPackageId, bannerId);
+                    if (!bannerId && (!metaPackageId || metaPackageId === 'custom')) {
+                        cashPoints = calculateCashPointsLegacy(paymentIntent.amount, isFirstTime);
+                    }
                     const amountInCents = paymentIntent.amount;
                     
                     await user.update({
@@ -175,7 +216,7 @@ export async function POST(request: NextRequest) {
                     
                     const valueUsdLegacy = paymentIntent.amount / 100;
 
-                    await donations.create({
+                    await createDonationOnce({
                         Username: paymentIntent.metadata.username,
                         OrderID: paymentIntent.id,
                         Email: paymentIntent.receipt_email || '',
@@ -186,7 +227,6 @@ export async function POST(request: NextRequest) {
                     });
 
                     // Check if this is a banner purchase (has bannerId in metadata)
-                    const bannerId = paymentIntent.metadata?.bannerId;
                     if (bannerId) {
                         try {
                             // Get banner items
