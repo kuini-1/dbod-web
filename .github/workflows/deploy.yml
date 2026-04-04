@@ -38,6 +38,8 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_CLIENT_DOWNLOAD_URL_EN: ${{ secrets.NEXT_PUBLIC_CLIENT_DOWNLOAD_URL_EN }}
+          NEXT_PUBLIC_CLIENT_DOWNLOAD_URL_KR: ${{ secrets.NEXT_PUBLIC_CLIENT_DOWNLOAD_URL_KR }}
         run: pnpm exec next build --webpack
 
       - name: Prepare standalone assets
