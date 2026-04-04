@@ -109,25 +109,39 @@ export default function PopupBanner() {
                 const gqlJson = await gqlRes.json();
                 const data: PopupBanner[] = gqlJson?.data?.popupBanners || [];
 
-                if (Array.isArray(data) && data.length > 0) {
-                    const filteredPopups = data.filter((popup: PopupBanner) => {
-                        if (popup.active === false) return false;
-                        const dismissedPopups = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('dismissedPopups') || '{}' : '{}');
-                        const lastDismissed = dismissedPopups[popup.id];
+                if (!Array.isArray(data) || data.length === 0) {
+                    setPopups([]);
+                    setIsClosing(false);
+                    setIsVisible(false);
+                    setCurrentPopupIndex(0);
+                    return;
+                }
 
-                        if (lastDismissed) {
-                            const dismissedTime = new Date(lastDismissed).getTime();
-                            const currentTime = new Date().getTime();
-                            const hoursSinceDismissed = (currentTime - dismissedTime) / (1000 * 60 * 60);
-                            return hoursSinceDismissed >= 24;
-                        }
+                const filteredPopups = data.filter((popup: PopupBanner) => {
+                    if (popup.active === false) return false;
+                    const dismissedPopups = JSON.parse(typeof window !== 'undefined' ? localStorage.getItem('dismissedPopups') || '{}' : '{}');
+                    const lastDismissed = dismissedPopups[popup.id];
 
-                        return true;
-                    });
-                    setPopups(filteredPopups);
-                    if (filteredPopups.length > 0) {
-                        setTimeout(() => setIsVisible(true), 100);
+                    if (lastDismissed) {
+                        const dismissedTime = new Date(lastDismissed).getTime();
+                        const currentTime = new Date().getTime();
+                        const hoursSinceDismissed = (currentTime - dismissedTime) / (1000 * 60 * 60);
+                        return hoursSinceDismissed >= 24;
                     }
+
+                    return true;
+                });
+
+                setPopups(filteredPopups);
+                setCurrentPopupIndex(0);
+                // Closing the banner left isClosing true; refetch (e.g. language change) must reset or UI stays on black exit state.
+                setIsClosing(false);
+                setIsVisible(false);
+
+                if (filteredPopups.length > 0) {
+                    setTimeout(() => setIsVisible(true), 100);
+                } else {
+                    setIsVisible(false);
                 }
             } catch (error) {
                 console.error('Failed to fetch popup banners:', error);
@@ -152,6 +166,8 @@ export default function PopupBanner() {
                 setTimeout(() => setIsVisible(true), 50);
             } else {
                 setPopups([]);
+                setIsClosing(false);
+                setIsVisible(false);
             }
             setDontShowAgain(false);
         }, 300);
