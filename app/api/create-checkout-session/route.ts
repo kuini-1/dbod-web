@@ -9,7 +9,7 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, { apiVersion: '2022
 // Currency config: methods + amount conversion from USD
 const CURRENCY_CONFIG: Record<string, { methods: string[]; rate: number; symbol: string }> = {
     usd: {
-        methods: ['card', 'link', 'crypto'],
+        methods: ['card', 'link'],
         rate: 1,
         symbol: '$',
     },
