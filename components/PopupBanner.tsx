@@ -340,14 +340,35 @@ export default function PopupBanner() {
 
                     <div className="h-full flex flex-col md:flex-row">
                         {/* Left Side - Character Preview */}
-                        <div className="relative w-full md:w-2/3 bg-gradient-to-br from-slate-950 to-slate-900 flex flex-col">
-                            {/* Character Preview Area */}
-                            <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
-                                {/* Background Pattern */}
-                                <div className="absolute inset-0 opacity-10">
-                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.1),transparent_70%)]" />
-                                </div>
+                        <div className="relative w-full md:w-2/3 flex flex-col overflow-hidden">
+                            {/* Layered gradient backdrop (costume showcase) */}
+                            <div
+                                className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#0a080c] via-slate-950 to-[#0f0a12]"
+                                aria-hidden
+                            />
+                            <div
+                                className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-red-950/25"
+                                aria-hidden
+                            />
+                            <div
+                                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_85%_65%_at_50%_38%,rgba(239,68,68,0.22),transparent_68%)]"
+                                aria-hidden
+                            />
+                            <div
+                                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_88%,rgba(99,102,241,0.28),transparent_42%)]"
+                                aria-hidden
+                            />
+                            <div
+                                className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_92%_18%,rgba(168,85,247,0.2),transparent_38%)]"
+                                aria-hidden
+                            />
+                            <div
+                                className="pointer-events-none absolute inset-0 bg-[linear-gradient(105deg,transparent_0%,rgba(239,68,68,0.06)_45%,transparent_55%,rgba(99,102,241,0.08)_100%)]"
+                                aria-hidden
+                            />
 
+                            {/* Character Preview Area */}
+                            <div className="relative flex flex-1 items-center justify-center overflow-hidden p-8">
                                 {/* Character Image */}
                                 <div className="relative z-10 w-full h-full flex items-center justify-center">
                                     <div className="relative w-full max-w-2xl h-full max-h-[600px] flex items-center justify-center">
@@ -382,7 +403,7 @@ export default function PopupBanner() {
                             </div>
 
                             {/* Character Selector */}
-                            <div className="p-6 border-t border-slate-700/50 bg-slate-900/50">
+                            <div className="relative z-10 border-t border-slate-700/50 bg-gradient-to-t from-slate-950/95 via-slate-900/75 to-transparent p-6">
                                 <div className="flex items-center justify-center gap-2">
                                     {characterModels.map((model) => {
                                         const isSelected = selectedCharacter.race === model.race && selectedCharacter.gender === model.gender;
