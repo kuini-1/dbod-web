@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
                 { error: 'Missing packageId or amount' },
                 { status: 400 }
             );
-        }
+        } 
 
         if (!Number.isFinite(amountUSDResolved) || amountUSDResolved <= 0) {
             return NextResponse.json(
