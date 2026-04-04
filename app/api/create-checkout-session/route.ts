@@ -30,6 +30,16 @@ const CURRENCY_CONFIG: Record<string, { methods: string[]; rate: number; symbol:
     },
 };
 
+function resolvePublicBaseUrl(): string {
+    const raw =
+        process.env.SITE_URL ||
+        process.env.APP_BASE_URL ||
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        '';
+    const cleaned = String(raw).trim().replace(/\/+$/, '');
+    return cleaned || 'http://localhost:3000';
+}
+
 export async function POST(request: NextRequest) {
     try {
         if (!stripe) {
@@ -92,7 +102,7 @@ export async function POST(request: NextRequest) {
 
         // Convert to Stripe amount (smallest unit: cents for USD/EUR, centavos for BRL, whole KRW)
         const amount = Math.round(amountUSDResolved * config.rate * (currency === 'krw' ? 1 : 100));
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const baseUrl = resolvePublicBaseUrl();
 
         const isBannerPurchase = !!bannerId;
         const successUrl = isBannerPurchase
