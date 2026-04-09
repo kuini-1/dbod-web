@@ -22,6 +22,7 @@ import { Raffle, RaffleEntry, RaffleWinner } from '../models/raffle';
 import { news_posts } from '../models/news_posts';
 import { news_post_items } from '../models/news_post_items';
 import { news_post_claims } from '../models/news_post_claims';
+import item_enchant_translations from '../models/item_enchant_translations';
 import type { ModelStatic, Model } from 'sequelize';
 
 const SEED_PACKAGES = [
@@ -145,6 +146,7 @@ export async function syncAll() {
 
     await Promise.all([
         syncModelAdditiveOnly(items),
+        syncModelAdditiveOnly(item_enchant_translations),
         syncModelAdditiveOnly(donations),
         syncModelAdditiveOnly(daily_rewards),
         syncModelAdditiveOnly(daily_reward_claims),

@@ -25,6 +25,11 @@ export type ItemEnchantRow = {
     name: string;
 };
 
+export type ItemEnchantTranslationNames = {
+    en: string;
+    kr: string;
+};
+
 const INVALID_BYTE = 255;
 
 function parseBool(v: string): boolean {
@@ -178,4 +183,115 @@ export async function fetchItemEnchantCsv(url = '/table_item_enchant_data_rows.c
     }
     const text = await res.text();
     return parseItemEnchantRowsFromCsv(text);
+}
+
+type ItemEnchantApiRow = Partial<Record<keyof ItemEnchantRow, unknown>> & {
+    tblidx?: unknown;
+    seTblidx?: unknown;
+    byExclIdx?: unknown;
+    byMinLevel?: unknown;
+    byMaxLevel?: unknown;
+    byFrequency?: unknown;
+    wEnchant_Value?: unknown;
+    byKind?: unknown;
+    dwEquip?: unknown;
+    byGroupNo?: unknown;
+    wMaxValue?: unknown;
+    bIsSuperior?: unknown;
+    bIsExcellent?: unknown;
+    bIsRare?: unknown;
+    bIsLegendary?: unknown;
+};
+
+function pickField(row: ItemEnchantApiRow, keys: string[]): unknown {
+    for (const key of keys) {
+        if (Object.prototype.hasOwnProperty.call(row, key)) {
+            return (row as Record<string, unknown>)[key];
+        }
+    }
+    return undefined;
+}
+
+function toInt(v: unknown, def: number): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.trunc(n) : def;
+}
+
+function toBool(v: unknown): boolean {
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'number') return v !== 0;
+    const s = String(v ?? '').trim().toLowerCase();
+    return s === '1' || s === 'true' || s === 'yes';
+}
+
+function toItemEnchantRowFromApi(row: ItemEnchantApiRow): ItemEnchantRow {
+    return {
+        tblidx: toInt(pickField(row, ['tblidx']), 0),
+        seTblidx: toInt(pickField(row, ['seTblidx', 'setblidx']), 0),
+        byExclIdx: toInt(pickField(row, ['byExclIdx', 'byexclidx']), 0),
+        byMinLevel: toInt(pickField(row, ['byMinLevel', 'byminlevel']), 0),
+        byMaxLevel: toInt(pickField(row, ['byMaxLevel', 'bymaxlevel']), INVALID_BYTE),
+        byFrequency: toInt(pickField(row, ['byFrequency', 'byfrequency']), 1),
+        wEnchant_Value: toInt(pickField(row, ['wEnchant_Value', 'wenchant_value']), 0),
+        byKind: toInt(pickField(row, ['byKind', 'bykind']), 0),
+        dwEquip: toInt(pickField(row, ['dwEquip', 'dwequip']), 0),
+        byGroupNo: toInt(pickField(row, ['byGroupNo', 'bygroupno']), 0),
+        wMaxValue: toInt(pickField(row, ['wMaxValue', 'wmaxvalue']), 0),
+        bIsSuperior: toBool(pickField(row, ['bIsSuperior', 'bissuperior'])),
+        bIsExcellent: toBool(pickField(row, ['bIsExcellent', 'bisexcellent'])),
+        bIsRare: toBool(pickField(row, ['bIsRare', 'bisrare'])),
+        bIsLegendary: toBool(pickField(row, ['bIsLegendary', 'bislegendary'])),
+        name: '',
+    };
+}
+
+export async function fetchItemEnchantData(
+    locale: 'en' | 'kr'
+): Promise<{ rows: ItemEnchantRow[]; translationsByTblidx: Map<number, ItemEnchantTranslationNames> }> {
+    const res = await fetch(`/api/game/item-enchant-data?locale=${encodeURIComponent(locale)}`, {
+        cache: 'no-store',
+    });
+    if (!res.ok) {
+        throw new Error(`Failed to load /api/game/item-enchant-data: ${res.status}`);
+    }
+    const payload = (await res.json()) as {
+        rows?: ItemEnchantApiRow[];
+        namesByTblidx?: Record<string, string>;
+        translations?: Array<{
+            tblidx?: unknown;
+            wszName_en?: unknown;
+            wszName_kr?: unknown;
+        }>;
+    };
+
+    const rows = (payload.rows ?? []).map(toItemEnchantRowFromApi);
+    const translationsByTblidx = new Map<number, ItemEnchantTranslationNames>();
+
+    for (const tr of payload.translations ?? []) {
+        const tblidx = Number(tr.tblidx);
+        if (!Number.isFinite(tblidx)) {
+            continue;
+        }
+        const en = String(tr.wszName_en ?? '').trim();
+        const kr = String(tr.wszName_kr ?? '').trim();
+        translationsByTblidx.set(Math.trunc(tblidx), { en, kr });
+    }
+
+    // Backward compatibility with server payloads that only send namesByTblidx.
+    if (translationsByTblidx.size === 0) {
+        const localeNames = payload.namesByTblidx ?? {};
+        for (const [key, value] of Object.entries(localeNames)) {
+            const tblidx = Number(key);
+            if (!Number.isFinite(tblidx)) {
+                continue;
+            }
+            const name = String(value ?? '').trim();
+            translationsByTblidx.set(Math.trunc(tblidx), {
+                en: locale === 'en' ? name : '',
+                kr: locale === 'kr' ? name : '',
+            });
+        }
+    }
+
+    return { rows, translationsByTblidx };
 }

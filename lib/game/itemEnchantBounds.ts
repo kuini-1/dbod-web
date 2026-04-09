@@ -9,7 +9,6 @@ import {
 import type { EquipmentCategoryId } from './dboItemCategory';
 import { getItemCategoryFlagForEquipmentCategory } from './dboItemCategory';
 import type { ItemEnchantRow } from './itemEnchantCsv';
-import { formatSystemEffectLabel } from './statDisplay';
 
 /**
  * Equipment upgrade milestones: every 3 levels (+3 … +15) the game runs a random-option gen/upgrade step.
@@ -118,17 +117,11 @@ export function isProperEnchantOptionForGen(
     return optionValue <= row.tblidx;
 }
 
-/**
- * Player-facing stat label: always from `table_system_effect` (`seTblidx` → wszName), formatted.
- * Does not use the enchant CSV `name` column (often placeholders). If `seTblidx` is missing in data, shows a generic id.
- */
-export function getEnchantDisplayName(row: ItemEnchantRow, effectNameBySeTblidx: Map<number, string>): string {
-    if (row.seTblidx > 0) {
-        const raw = effectNameBySeTblidx.get(row.seTblidx);
-        if (raw) {
-            return formatSystemEffectLabel(raw);
-        }
-        return `Effect #${row.seTblidx}`;
+/** Player-facing stat label from translation table (`tblidx` keyed). */
+export function getEnchantDisplayName(row: ItemEnchantRow, nameByTblidx: Map<number, string>): string {
+    const name = nameByTblidx.get(row.tblidx);
+    if (name) {
+        return name;
     }
     return `Enchant #${row.tblidx}`;
 }

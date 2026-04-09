@@ -25,7 +25,7 @@ type EquipmentStatDetailModalProps = {
     needMinLevel: number;
     equipmentCategory: EquipmentCategoryId;
     applicable: ItemEnchantRow[];
-    effectNameBySeTblidx: Map<number, string>;
+    enchantNameByTblidx: Map<number, string>;
     itemWorthPercent?: number;
     charId?: number;
 };
@@ -39,7 +39,7 @@ export default function EquipmentStatDetailModal({
     needMinLevel,
     equipmentCategory,
     applicable,
-    effectNameBySeTblidx,
+    enchantNameByTblidx,
     itemWorthPercent = 0,
     charId = 0,
 }: EquipmentStatDetailModalProps) {
@@ -57,7 +57,7 @@ export default function EquipmentStatDetailModal({
         return null;
     }
 
-    const label = getEnchantDisplayName(row, effectNameBySeTblidx);
+    const label = getEnchantDisplayName(row, enchantNameByTblidx);
     const baseSeed = ((charId >>> 0) * 1597334677 + row.tblidx * 3812015801) >>> 0;
     const runSeed = (baseSeed ^ (rerollNonce * 0x9e3779b1)) >>> 0;
 
@@ -132,7 +132,7 @@ export default function EquipmentStatDetailModal({
                             {detail.creationLines.length > 0 ? (
                                 <ul className="mt-3 space-y-2">
                                     {detail.creationLines.map((cl) => {
-                                        const name = getEnchantDisplayName(cl.row, effectNameBySeTblidx);
+                                        const name = getEnchantDisplayName(cl.row, enchantNameByTblidx);
                                         return (
                                             <li
                                                 key={`${rerollNonce}-${cl.lineNumber}-${cl.row.tblidx}`}
@@ -169,7 +169,7 @@ export default function EquipmentStatDetailModal({
                                     ) : null}
                                     <ul className="mt-4 space-y-4">
                                         {detail.upgradeSteps.map((step) => {
-                                            const statName = getEnchantDisplayName(step.targetRow, effectNameBySeTblidx);
+                                            const statName = getEnchantDisplayName(step.targetRow, enchantNameByTblidx);
                                             return (
                                                 <li key={`${rerollNonce}-${step.equipmentUpgradeLevel}`} className="rounded-lg border border-red-500/10 bg-stone-800/40 px-3 py-2.5">
                                                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -212,7 +212,7 @@ export default function EquipmentStatDetailModal({
                                     <ul className="mt-3 space-y-2">
                                         {detail.afterUpgradeLines.map((line) => {
                                             const isSel = line.row.tblidx === row.tblidx;
-                                            const name = getEnchantDisplayName(line.row, effectNameBySeTblidx);
+                                            const name = getEnchantDisplayName(line.row, enchantNameByTblidx);
                                             return (
                                                 <li
                                                     key={`${rerollNonce}-after-${line.lineNumber}-${line.row.tblidx}`}

@@ -73,6 +73,14 @@
 - Example: Correct: pass lookups use `activeUntil >= now`; wrong: filter by `purchaseYear/purchaseMonth` only.
 - Last updated: 2026-03-31
 
+## [Website] — Enchant Fetch Must Join Translation Table
+- Importance: 🟢 LOW
+- Correction count: 1
+- Rule: When fetching `table_item_enchant_data`, also fetch `item_enchant_translations`, match by `tblidx`, and use `wszName_en`/`wszName_kr` by selected language.
+- Context: Website
+- Example: Correct: base enchant rows + translation rows joined on `tblidx`; Wrong: fetch only enchant rows without translation join.
+- Last updated: 2026-04-09
+
 ---
 
 ## 📊 Correction Log

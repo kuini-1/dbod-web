@@ -6,10 +6,9 @@ import { faTimes, faPlus, faMinus, faRotate, faChartLine } from '@fortawesome/fr
 import { local, formatString } from '@/lib/utils/localize';
 import { API } from '@/lib/api/client';
 import { SuccessToast, DangerToast } from '@/lib/utils/toasts';
-import type { ItemEnchantRow } from '@/lib/game/itemEnchantCsv';
-import { fetchItemEnchantCsv } from '@/lib/game/itemEnchantCsv';
+import type { ItemEnchantRow, ItemEnchantTranslationNames } from '@/lib/game/itemEnchantCsv';
+import { fetchItemEnchantData } from '@/lib/game/itemEnchantCsv';
 import { buildPreviewState, getEnchantDisplayName } from '@/lib/game/itemEnchantBounds';
-import { fetchSystemEffectNameMap } from '@/lib/game/systemEffectCsv';
 import type { EquipmentCategoryId } from '@/lib/game/dboItemCategory';
 import { EQUIPMENT_CATEGORY_LABELS } from '@/lib/game/dboItemCategory';
 import {
@@ -78,7 +77,9 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
 
     const [enchantRows, setEnchantRows] = useState<ItemEnchantRow[] | null>(null);
     const [enchantLoadError, setEnchantLoadError] = useState<string | null>(null);
-    const [effectNameBySeTblidx, setEffectNameBySeTblidx] = useState<Map<number, string>>(() => new Map());
+    const [enchantTranslationsByTblidx, setEnchantTranslationsByTblidx] = useState<
+        Map<number, ItemEnchantTranslationNames>
+    >(() => new Map());
     const [itemRank, setItemRank] = useState(ITEM_RANK_LEGENDARY);
     const [needMinLevel, setNeedMinLevel] = useState(70);
     const [equipmentCategory, setEquipmentCategory] = useState<EquipmentCategoryId>('ring');
@@ -116,35 +117,36 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
         }
         let cancelled = false;
         setEnchantLoadError(null);
-        fetchItemEnchantCsv()
-            .then((rows) => {
+        fetchItemEnchantData(locale)
+            .then(({ rows, translationsByTblidx }) => {
                 if (!cancelled) {
                     setEnchantRows(rows);
+                    setEnchantTranslationsByTblidx(translationsByTblidx);
                 }
             })
             .catch((e: unknown) => {
                 if (!cancelled) {
                     setEnchantRows(null);
+                    setEnchantTranslationsByTblidx(new Map());
                     setEnchantLoadError(e instanceof Error ? e.message : local.enchantPreviewLoadError);
-                }
-            });
-
-        fetchSystemEffectNameMap()
-            .then((map) => {
-                if (!cancelled) {
-                    setEffectNameBySeTblidx(map);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setEffectNameBySeTblidx(new Map());
                 }
             });
 
         return () => {
             cancelled = true;
         };
-    }, [isOpen]);
+    }, [isOpen, locale]);
+
+    const enchantNameByTblidx = useMemo(() => {
+        const out = new Map<number, string>();
+        for (const [tblidx, tr] of enchantTranslationsByTblidx.entries()) {
+            const selected = locale === 'kr' ? tr.kr : tr.en;
+            if (selected) {
+                out.set(tblidx, selected);
+            }
+        }
+        return out;
+    }, [enchantTranslationsByTblidx, locale]);
 
     const itemWorthAfterPreview =
         upgradeAmount > 0 ? Math.min(ITEM_WORTH_MAX, itemWorth + upgradeAmount) : itemWorth;
@@ -169,8 +171,8 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
         }
         const rows = [...preview.applicable];
         rows.sort((a, b) => {
-            const la = getEnchantDisplayName(a, effectNameBySeTblidx);
-            const lb = getEnchantDisplayName(b, effectNameBySeTblidx);
+            const la = getEnchantDisplayName(a, enchantNameByTblidx);
+            const lb = getEnchantDisplayName(b, enchantNameByTblidx);
             const cmp = la.localeCompare(lb);
             if (cmp !== 0) {
                 return cmp;
@@ -178,7 +180,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
             return a.tblidx - b.tblidx;
         });
         return rows;
-    }, [preview, effectNameBySeTblidx]);
+    }, [preview, enchantNameByTblidx]);
 
     const handleClose = () => {
         setIsClosing(true);
@@ -356,7 +358,12 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                         {/* Stats preview — min/max from server worth + enchant costs */}
                         <div className="p-4 bg-stone-800/50 rounded-xl border border-red-500/20">
                             <div className="mb-4">
-                                <h3 className="text-lg font-semibold text-white">{local.statsPreviewTitle}</h3>
+                                <div className="flex items-center justify-between gap-3">
+                                    <h3 className="text-lg font-semibold text-white">{local.statsPreviewTitle}</h3>
+                                    <span className="text-[11px] rounded border border-red-500/25 bg-stone-900/60 px-2 py-1 text-stone-400">
+                                        Locale: {locale}
+                                    </span>
+                                </div>
                                 <p className="text-stone-500 text-xs mt-1">{local.statsPreviewHint}</p>
                             </div>
 
@@ -429,7 +436,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                                 {sortedApplicable.map((row) => {
                                     const b0 = preview?.boundsBefore.get(row.tblidx);
                                     const b1 = preview?.boundsAfter.get(row.tblidx);
-                                    const label = getEnchantDisplayName(row, effectNameBySeTblidx);
+                                    const label = getEnchantDisplayName(row, enchantNameByTblidx);
                                     const range0 =
                                         b0 && b0.max >= 1
                                             ? formatString(local.enchantPreviewRange, b0.min, b0.max)
@@ -500,7 +507,7 @@ export default function UpgradeEquipmentModal({ char, accountVip = 0, mallpoints
                 needMinLevel={needMinLevel}
                 equipmentCategory={equipmentCategory}
                 applicable={preview?.applicable ?? []}
-                effectNameBySeTblidx={effectNameBySeTblidx}
+                enchantNameByTblidx={enchantNameByTblidx}
                 itemWorthPercent={itemWorth}
                 charId={char?.CharID}
             />
