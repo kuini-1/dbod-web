@@ -13,10 +13,26 @@ interface QuickPurchaseProps {
     currency?: string;
 }
 
+const CURRENCY_RATES: Record<string, number> = {
+    usd: 1,
+    brl: 6.0,
+    krw: 1350,
+    eur: 0.92,
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+    usd: '$',
+    brl: 'R$',
+    krw: '₩',
+    eur: '€',
+};
+
 export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: QuickPurchaseProps) {
     const router = useRouter();
     const { locale } = useLocale();
     const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+    const rate = CURRENCY_RATES[currency] || 1;
+    const currencySymbol = CURRENCY_SYMBOLS[currency] || '$';
     const [lastPurchase, setLastPurchase] = useState<{ price: number; cp: number } | null>(null);
     const [isReturningCustomer, setIsReturningCustomer] = useState(false);
     const [loading, setLoading] = useState<number | null>(null);
@@ -124,6 +140,10 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
                     const eventBonusCP = bonusCP && bonusCP > 0 ? Math.round(option.cp * bonusCP) : 0;
                     const firstTimeBonusCP = firstTime ? option.cp : 0;
                     const totalCP = option.cp + eventBonusCP + firstTimeBonusCP;
+                    const convertedPrice = option.price * rate;
+                    const formattedPrice = currency === 'krw'
+                        ? Math.round(convertedPrice).toLocaleString()
+                        : convertedPrice.toFixed(2);
 
                     return (
                         <button
@@ -149,7 +169,7 @@ export default function QuickPurchase({ bonusCP, firstTime, currency = 'usd' }: 
                                     </span>
                                 </div>
                                 <div className="text-sm font-bold text-purple-400">
-                                    ${option.price}
+                                    {currencySymbol}{formattedPrice}
                                 </div>
                                 {(eventBonusCP > 0 || firstTimeBonusCP > 0) && (
                                     <div className="text-xs text-green-400 mt-1">

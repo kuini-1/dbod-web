@@ -7,13 +7,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGem, faTimes, faGift, faClock, faBox, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/navigation';
 import { useLocale } from './LocaleProvider';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 
 interface PopupBanner {
     id: number;
@@ -58,6 +51,13 @@ const CURRENCY_RATES: Record<string, number> = {
     brl: 6.0,
     krw: 1350,
     eur: 0.92,
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+    usd: '$',
+    brl: 'R$',
+    krw: '₩',
+    eur: '€',
 };
 
 export default function PopupBanner() {
@@ -300,7 +300,7 @@ export default function PopupBanner() {
     const convertedPrice = currentPopup?.price != null
         ? currentPopup.price * (CURRENCY_RATES[currency] || 1)
         : null;
-    const selectedCurrencyLabel = CURRENCIES.find((c) => c.code === currency)?.label || 'USD';
+    const selectedCurrencySymbol = CURRENCY_SYMBOLS[currency] || '$';
     
     // Get character preview image path - computed based on current selection
     // Add cache-busting query parameter to prevent stale image caching
@@ -528,7 +528,7 @@ export default function PopupBanner() {
                                         <div className="text-sm text-slate-400 mb-1">{tx('Special Offer', '특가 상품')}</div>
                                         <div className="text-3xl font-bold text-white">
                                             {convertedPrice != null
-                                                ? `${currency === 'krw' ? Math.round(convertedPrice).toLocaleString() : convertedPrice.toFixed(2)} ${selectedCurrencyLabel}`
+                                                ? `${selectedCurrencySymbol}${currency === 'krw' ? Math.round(convertedPrice).toLocaleString() : convertedPrice.toFixed(2)}`
                                                 : tx('Contact support', '문의 필요')}
                                         </div>
                                     </div>
@@ -537,18 +537,18 @@ export default function PopupBanner() {
                                         <div className="text-sm text-slate-400 text-left">
                                             {tx('Payment currency', '결제 통화')}
                                         </div>
-                                        <Select value={currency} onValueChange={setCurrency}>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder={tx('Select currency', '통화 선택')} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {CURRENCIES.map((c) => (
-                                                    <SelectItem key={c.code} value={c.code}>
-                                                        {c.label} - {c.region}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <select
+                                            value={currency}
+                                            onChange={(e) => setCurrency(e.target.value)}
+                                            className="w-full h-10 rounded-md border border-slate-600 bg-slate-900 px-3 text-sm text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40"
+                                            aria-label={tx('Payment currency', '결제 통화')}
+                                        >
+                                            {CURRENCIES.map((c) => (
+                                                <option key={c.code} value={c.code}>
+                                                    {c.label} - {c.region}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                     
                                     {/* Purchase Button */}

@@ -20,6 +20,20 @@ interface PackageCardProps {
     currency?: string;
 }
 
+const CURRENCY_RATES: Record<string, number> = {
+    usd: 1,
+    brl: 6.0,
+    krw: 1350,
+    eur: 0.92,
+};
+
+const CURRENCY_SYMBOLS: Record<string, string> = {
+    usd: '$',
+    brl: 'R$',
+    krw: '₩',
+    eur: '€',
+};
+
 export default function PackageCard({
     id,
     price,
@@ -36,6 +50,12 @@ export default function PackageCard({
     const router = useRouter();
     const { locale } = useLocale();
     const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+    const rate = CURRENCY_RATES[currency] || 1;
+    const currencySymbol = CURRENCY_SYMBOLS[currency] || '$';
+    const convertedPrice = price * rate;
+    const formattedPrice = currency === 'krw'
+        ? Math.round(convertedPrice).toLocaleString()
+        : convertedPrice.toFixed(2);
     
     // Calculate bonuses
     const eventBonusCP = bonusCP && bonusCP > 0 ? Math.round(baseCP * bonusCP) : 0;
@@ -124,7 +144,7 @@ export default function PackageCard({
                         </div>
                     </div>
                     <div className='text-right'>
-                        <div className='text-3xl font-bold text-white mb-1'>${price}</div>
+                        <div className='text-3xl font-bold text-white mb-1'>{currencySymbol}{formattedPrice}</div>
                         <div className='text-xs text-white/60'>{tx('Price', '가격')}</div>
                         {cpPerDollar > 0 && (
                             <div className='text-xs text-green-400 font-semibold mt-1'>
