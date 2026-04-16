@@ -7,6 +7,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGem, faTimes, faGift, faClock, faBox, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { useRouter } from 'next/navigation';
 import { useLocale } from './LocaleProvider';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 interface PopupBanner {
     id: number;
@@ -39,6 +46,20 @@ interface BannerItem {
     };
 }
 
+const CURRENCIES = [
+    { code: 'usd', label: 'USD', region: 'International' },
+    { code: 'brl', label: 'BRL', region: 'Brazil (PIX)' },
+    { code: 'krw', label: 'KRW', region: 'Korea (Kakao Pay, Payco, Naver Pay)' },
+    { code: 'eur', label: 'EUR', region: 'Europe (iDEAL, Bancontact, etc.)' },
+] as const;
+
+const CURRENCY_RATES: Record<string, number> = {
+    usd: 1,
+    brl: 6.0,
+    krw: 1350,
+    eur: 0.92,
+};
+
 export default function PopupBanner() {
     const { locale } = useLocale();
     const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
@@ -50,6 +71,7 @@ export default function PopupBanner() {
     const [selectedCharacter, setSelectedCharacter] = useState<{race: CharacterRace; gender: CharacterGender}>({ race: 'human', gender: 'male' });
     const [isPurchasing, setIsPurchasing] = useState(false);
     const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] = useState(false);
+    const [currency, setCurrency] = useState<string>('usd');
     const router = useRouter();
 
     // Character model options
@@ -151,6 +173,10 @@ export default function PopupBanner() {
         fetchPopups();
     }, [locale]);
 
+    useEffect(() => {
+        setCurrency(locale === 'kr' ? 'krw' : 'usd');
+    }, [locale]);
+
     const handleClose = () => {
         setIsClosing(true);
         setTimeout(() => {
@@ -210,7 +236,7 @@ export default function PopupBanner() {
                         ? { packageId: currentPopup.packageId }
                         : { amount: currentPopup.price }),
                     bannerId: currentPopup.id,
-                    currency: 'usd', // PopupBanner is global; use USD by default
+                    currency,
                 }),
             });
 
@@ -271,6 +297,10 @@ export default function PopupBanner() {
     const currentModel = characterModels.find(
         m => m.race === selectedCharacter.race && m.gender === selectedCharacter.gender
     ) || characterModels[0];
+    const convertedPrice = currentPopup?.price != null
+        ? currentPopup.price * (CURRENCY_RATES[currency] || 1)
+        : null;
+    const selectedCurrencyLabel = CURRENCIES.find((c) => c.code === currency)?.label || 'USD';
     
     // Get character preview image path - computed based on current selection
     // Add cache-busting query parameter to prevent stale image caching
@@ -497,10 +527,28 @@ export default function PopupBanner() {
                                     <div className="text-center pt-2">
                                         <div className="text-sm text-slate-400 mb-1">{tx('Special Offer', '특가 상품')}</div>
                                         <div className="text-3xl font-bold text-white">
-                                            {currentPopup.price != null
-                                                ? `$${currentPopup.price.toFixed(2)} USD`
+                                            {convertedPrice != null
+                                                ? `${currency === 'krw' ? Math.round(convertedPrice).toLocaleString() : convertedPrice.toFixed(2)} ${selectedCurrencyLabel}`
                                                 : tx('Contact support', '문의 필요')}
                                         </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="text-sm text-slate-400 text-left">
+                                            {tx('Payment currency', '결제 통화')}
+                                        </div>
+                                        <Select value={currency} onValueChange={setCurrency}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder={tx('Select currency', '통화 선택')} />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {CURRENCIES.map((c) => (
+                                                    <SelectItem key={c.code} value={c.code}>
+                                                        {c.label} - {c.region}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                     
                                     {/* Purchase Button */}

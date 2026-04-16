@@ -13,7 +13,11 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-export function Navbar() {
+type NavbarProps = {
+    hasLevelupNotification?: boolean;
+};
+
+export function Navbar({ hasLevelupNotification = false }: NavbarProps) {
     const { locale, setLocale, t } = useLocale();
     const pathname = usePathname();
     const router = useRouter();
@@ -159,8 +163,11 @@ export function Navbar() {
                             <Link href="/cashshop" className={`hover:text-red-400 transition-colors ${pathname === '/cashshop' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {t('navItemCashshop')}
                             </Link>
-                            <Link href="/event-schedule" className={`hover:text-red-400 transition-colors ${pathname === '/event-schedule' ? 'text-red-400' : 'text-stone-300'}`}>
-                                {t('navItemEventSchedule')}
+                            <Link href="/event-schedule" className={`hover:text-red-400 transition-colors ${pathname === '/event-schedule' ? 'text-red-400' : 'text-stone-300'} flex items-center gap-2`}>
+                                <span>{t('navItemEventSchedule')}</span>
+                                {isLoggedIn && hasLevelupNotification ? (
+                                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+                                ) : null}
                             </Link>
                         </div>
                     </div>

@@ -5,6 +5,7 @@ import { Navbar } from './Navbar';
 import { API } from '@/lib/api/client';
 import DailyLoginAutoModal from './DailyLoginAutoModal';
 import EventDailyLoginModal, { type EventDailyApiPayload } from '@/components/EventDailyLoginModal';
+import EventLevelupModal, { type EventLevelupApiPayload } from '@/components/EventLevelupModal';
 
 interface DailyReward {
     date: number;
@@ -50,7 +51,10 @@ export default function NavbarClient() {
     const [buyingPass, setBuyingPass] = useState(false);
     const [eventDailyPayload, setEventDailyPayload] = useState<EventDailyApiPayload | null>(null);
     const [eventDailyModalOpen, setEventDailyModalOpen] = useState(false);
+    const [eventLevelupPayload, setEventLevelupPayload] = useState<EventLevelupApiPayload | null>(null);
+    const [eventLevelupModalOpen, setEventLevelupModalOpen] = useState(false);
     const [pendingEventAfterDailyClose, setPendingEventAfterDailyClose] = useState(false);
+    const [hasLevelupNotification, setHasLevelupNotification] = useState(false);
 
     const refreshEventDailyPayload = useCallback(async () => {
         const res = await API.get('/event-daily-rewards');
@@ -60,6 +64,28 @@ export default function NavbarClient() {
             setEventDailyPayload(null);
         }
     }, []);
+
+    const refreshEventLevelupPayload = useCallback(async (characterId?: number) => {
+        const query = Number.isFinite(Number(characterId)) && Number(characterId) > 0
+            ? `?characterId=${Number(characterId)}`
+            : '';
+        const res = await API.get(`/event-levelup-rewards${query}`);
+        if (res.status === 200 && res.data && typeof res.data === 'object') {
+            const payload = res.data as EventLevelupApiPayload;
+            setEventLevelupPayload(payload);
+            const rows = Array.isArray(payload.data) ? payload.data : [];
+            setHasLevelupNotification(rows.some((row) => !!row.available));
+        } else {
+            setEventLevelupPayload(null);
+            setHasLevelupNotification(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        refreshEventLevelupPayload().catch(() => {
+            setHasLevelupNotification(false);
+        });
+    }, [refreshEventLevelupPayload]);
 
     const openDailyLoginModal = async () => {
         const privateRes = await API.get('/private');
@@ -175,13 +201,21 @@ export default function NavbarClient() {
                 .catch(() => {});
         };
 
+        const handleOpenEventLevelupModal = () => {
+            refreshEventLevelupPayload()
+                .then(() => setEventLevelupModalOpen(true))
+                .catch(() => {});
+        };
+
         window.addEventListener('open-daily-login-modal', handleOpenDailyLoginModal);
         window.addEventListener('open-event-daily-login-modal', handleOpenEventDailyLoginModal);
+        window.addEventListener('open-event-levelup-modal', handleOpenEventLevelupModal);
         return () => {
             window.removeEventListener('open-daily-login-modal', handleOpenDailyLoginModal);
             window.removeEventListener('open-event-daily-login-modal', handleOpenEventDailyLoginModal);
+            window.removeEventListener('open-event-levelup-modal', handleOpenEventLevelupModal);
         };
-    }, [refreshEventDailyPayload]);
+    }, [refreshEventDailyPayload, refreshEventLevelupPayload]);
 
     const handlePurchasePass = async () => {
         try {
@@ -206,7 +240,7 @@ export default function NavbarClient() {
 
     return (
         <>
-            <Navbar />
+            <Navbar hasLevelupNotification={hasLevelupNotification} />
             <DailyLoginAutoModal
                 isOpen={modalOpen}
                 onClose={() => {
@@ -236,6 +270,13 @@ export default function NavbarClient() {
                 payload={eventDailyPayload}
                 loading={false}
                 onRefresh={refreshEventDailyPayload}
+            />
+            <EventLevelupModal
+                isOpen={eventLevelupModalOpen}
+                onClose={() => setEventLevelupModalOpen(false)}
+                payload={eventLevelupPayload}
+                loading={false}
+                onRefresh={refreshEventLevelupPayload}
             />
         </>
     );

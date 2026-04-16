@@ -81,6 +81,14 @@
 - Example: Correct: base enchant rows + translation rows joined on `tblidx`; Wrong: fetch only enchant rows without translation join.
 - Last updated: 2026-04-09
 
+## [Website] — Level-Up Admin Milestone Workflow
+- Importance: 🟢 LOW
+- Correction count: 1
+- Rule: In admin level-up events, milestones are created by required level first; item selection must be handled in a separate donation-tier-like catalog section, not inside milestone creation rows.
+- Context: Website
+- Example: Correct: create level milestone -> pick item in separate catalog assignment panel. Wrong: milestone row directly requires choosing item at creation time.
+- Last updated: 2026-04-15
+
 ---
 
 ## 📊 Correction Log

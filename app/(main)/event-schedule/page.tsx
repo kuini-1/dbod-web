@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { API } from '@/lib/api/client';
 
 type WeeklyEvent = {
     title: string;
@@ -146,11 +147,30 @@ export default function EventSchedulePage() {
     const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
     const [now, setNow] = useState(() => new Date());
     const [isMounted, setIsMounted] = useState(false);
+    const [hasLevelupClaimable, setHasLevelupClaimable] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const refreshLevelupClaimable = async () => {
+            try {
+                const res = await API.get('/event-levelup-rewards');
+                if (res.status !== 200 || !res.data || typeof res.data !== 'object') {
+                    setHasLevelupClaimable(false);
+                    return;
+                }
+                const rows = Array.isArray(res.data.data) ? res.data.data : [];
+                setHasLevelupClaimable(rows.some((row) => !!row.available));
+            } catch {
+                setHasLevelupClaimable(false);
+            }
+        };
+
+        void refreshLevelupClaimable();
     }, []);
 
     const kstParts = useMemo(() => (now ? getKstTimeParts(now) : null), [now]);
@@ -217,13 +237,30 @@ export default function EventSchedulePage() {
     return (
         <div className="text-white bg-stone-900 min-h-screen px-4 py-16">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
+                <div className="mb-6 flex flex-wrap gap-3">
                     <button
                         type="button"
                         onClick={() => window.dispatchEvent(new Event('open-event-daily-login-modal'))}
                         className="rounded-lg border border-purple-500/50 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-200 hover:bg-purple-500/20 transition-colors duration-200 cursor-pointer"
                     >
                         {tx('Open Event Daily Login', '이벤트 출석 열기')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new Event('open-event-levelup-modal'))}
+                        className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors duration-200 cursor-pointer inline-flex items-center gap-2 ${
+                            hasLevelupClaimable
+                                ? 'border-amber-300 bg-amber-500/20 text-amber-100 shadow-[0_0_20px_rgba(251,191,36,0.28)] hover:bg-amber-500/30'
+                                : 'border-amber-500/50 bg-amber-500/10 text-amber-200 hover:bg-amber-500/20'
+                        }`}
+                    >
+                        <span>{tx('Open Level-Up Event', '레벨업 이벤트 열기')}</span>
+                        {hasLevelupClaimable ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-200/60 bg-amber-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-100">
+                                <span className="h-1.5 w-1.5 rounded-full bg-amber-100 animate-pulse" />
+                                {tx('Claimable', '수령 가능')}
+                            </span>
+                        ) : null}
                     </button>
                 </div>
                 <div className="rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-500/15 to-stone-800/80 p-6 md:p-7 mb-8">

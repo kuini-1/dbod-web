@@ -15,6 +15,11 @@ import {
     event_daily_login_rewards,
     event_daily_login_claims,
 } from '../models/event_daily_login';
+import {
+    event_levelup_events,
+    event_levelup_rewards,
+    event_levelup_claims,
+} from '../models/event_levelup';
 import cashshop_storage from '../models/cashshop_storage';
 import { server_status } from '../models/server_status';
 import { characters } from '../models/characters';
@@ -154,6 +159,9 @@ export async function syncAll() {
         syncModelAdditiveOnly(event_daily_login_events),
         syncModelAdditiveOnly(event_daily_login_rewards),
         syncModelAdditiveOnly(event_daily_login_claims),
+        syncModelAdditiveOnly(event_levelup_events),
+        syncModelAdditiveOnly(event_levelup_rewards),
+        syncModelAdditiveOnly(event_levelup_claims),
         syncModelAdditiveOnly(cashshop_storage),
         syncModelAdditiveOnly(server_status),
     ]);

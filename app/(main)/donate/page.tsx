@@ -151,6 +151,10 @@ export default function DonatePage() {
         })();
     }, []);
 
+    useEffect(() => {
+        setCurrency(locale === 'kr' ? 'krw' : 'usd');
+    }, [locale]);
+
     const DonationData: DonationPackage[] = donationData?.DonationData || [
         { id: 1, price: 5, CP: 50 },
         { id: 2, price: 10, CP: 105 },
