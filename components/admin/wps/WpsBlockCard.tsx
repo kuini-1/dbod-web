@@ -152,8 +152,8 @@ function WpsBlockCardComponent({
         }
         return true;
       },
-      onDragEnter: ({ input }) => setEdgeClasses(input?.clientY),
-      onDrag: ({ input }) => setEdgeClasses(input?.clientY),
+      onDragEnter: ({ location }) => setEdgeClasses(location.current.input.clientY),
+      onDrag: ({ location }) => setEdgeClasses(location.current.input.clientY),
       onDragLeave: () => clearEdgeClasses(),
       onDrop: () => clearEdgeClasses(),
     });

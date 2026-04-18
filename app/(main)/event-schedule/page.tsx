@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { API } from '@/lib/api/client';
 
@@ -146,11 +146,14 @@ export default function EventSchedulePage() {
     const { locale } = useLocale();
     const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
     const [now, setNow] = useState(() => new Date());
-    const [isMounted, setIsMounted] = useState(false);
+    const isClient = useSyncExternalStore(
+        () => () => {},
+        () => true,
+        () => false
+    );
     const [hasLevelupClaimable, setHasLevelupClaimable] = useState(false);
 
     useEffect(() => {
-        setIsMounted(true);
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
@@ -163,7 +166,9 @@ export default function EventSchedulePage() {
                     setHasLevelupClaimable(false);
                     return;
                 }
-                const rows = Array.isArray(res.data.data) ? res.data.data : [];
+                const rows = Array.isArray(res.data.data)
+                    ? (res.data.data as { available?: boolean }[])
+                    : [];
                 setHasLevelupClaimable(rows.some((row) => !!row.available));
             } catch {
                 setHasLevelupClaimable(false);
@@ -279,7 +284,7 @@ export default function EventSchedulePage() {
                         <div className="inline-flex flex-col items-start md:items-end gap-1 text-sm">
                             <span className="text-stone-400">{tx('Current KST', '현재 KST')}</span>
                             <span className="font-mono text-red-200 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-1.5">
-                                {isMounted ? currentKstText : '--:--:--'}
+                                {isClient ? currentKstText : '--:--:--'}
                             </span>
                         </div>
                     </div>

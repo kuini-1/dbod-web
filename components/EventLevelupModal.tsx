@@ -172,7 +172,6 @@ export default function EventLevelupModal(props: EventLevelupModalProps) {
                                         {tx('Character', '캐릭터')}
                                     </label>
                                     <Select
-                                        modal={false}
                                         value={selectCharacterValue}
                                         onValueChange={(value) => void handleCharacterChange(value)}
                                     >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Plus, Save, Trash2 } from 'lucide-react';
 import { API } from '@/lib/api/client';
@@ -20,7 +20,7 @@ function iconPath(name: string): string {
 
 export default function AdminEventLevelupPage() {
     const { locale } = useLocale();
-    const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
+    const tx = useCallback((en: string, kr: string) => (locale === 'kr' ? kr : en), [locale]);
 
     const [events, setEvents] = useState<LevelupEvent[]>([]);
     const [cashshopItems, setCashshopItems] = useState<CashshopItem[]>([]);
@@ -37,6 +37,9 @@ export default function AdminEventLevelupPage() {
     const [brokenIcons, setBrokenIcons] = useState<Record<string, boolean>>({});
     const [addItemDraft, setAddItemDraft] = useState<Record<number, { amount: string }>>({});
     const [editRewardDraft, setEditRewardDraft] = useState<Record<number, { requiredLevel: string; amount: string }>>({});
+
+    const selectedEventIdRef = useRef(selectedEventId);
+    selectedEventIdRef.current = selectedEventId;
 
     const selectedEvent = useMemo(() => events.find((event) => event.id === selectedEventId) || null, [events, selectedEventId]);
     const selectedReward = useMemo(
@@ -65,7 +68,7 @@ export default function AdminEventLevelupPage() {
         [selectedEvent?.rewards]
     );
 
-    async function loadData() {
+    const loadData = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
@@ -74,7 +77,8 @@ export default function AdminEventLevelupPage() {
             const nextEvents: LevelupEvent[] = res.data.events || [];
             setEvents(nextEvents);
             setCashshopItems(res.data.cashshopItems || []);
-            const nextEventId = selectedEventId && nextEvents.some((e) => e.id === selectedEventId) ? selectedEventId : nextEvents[0]?.id ?? null;
+            const currentSelectedId = selectedEventIdRef.current;
+            const nextEventId = currentSelectedId && nextEvents.some((e) => e.id === currentSelectedId) ? currentSelectedId : nextEvents[0]?.id ?? null;
             setSelectedEventId(nextEventId);
             const ev = nextEvents.find((e) => e.id === nextEventId) || null;
             const nextLevel = ev?.rewards?.[0]?.requiredLevel ?? null;
@@ -84,9 +88,11 @@ export default function AdminEventLevelupPage() {
         } finally {
             setLoading(false);
         }
-    }
+    }, [tx]);
 
-    useEffect(() => { void loadData(); }, []);
+    useEffect(() => {
+        void loadData();
+    }, [loadData]);
     useEffect(() => {
         if (!selectedEvent) {
             setSelectedEventDraft({ title: '', slug: '', startDate: '', endDate: '', isActive: true });
@@ -108,14 +114,14 @@ export default function AdminEventLevelupPage() {
             };
         }
         setEditRewardDraft(nextDraft);
-    }, [selectedEvent?.id, selectedEvent?.title, selectedEvent?.slug, selectedEvent?.startDate, selectedEvent?.endDate, selectedEvent?.isActive, selectedEvent?.rewards]);
+    }, [selectedEvent]);
     useEffect(() => {
         if (!selectedReward) {
             setItemAmountDraft('1');
             return;
         }
         setItemAmountDraft(String(Math.max(1, Number(selectedReward.amount || 1))));
-    }, [selectedReward?.id, selectedReward?.amount]);
+    }, [selectedReward]);
 
     async function createEvent() {
         if (!newEventDraft.title || !newEventDraft.startDate || !newEventDraft.endDate) {
