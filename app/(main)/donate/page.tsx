@@ -78,7 +78,11 @@ export default function DonatePage() {
     const [donationData, setDonationData] = useState<any>(null);
     const [donationTiers, setDonationTiers] = useState<DonationTier[]>([]);
     const [characters, setCharacters] = useState<CharacterOption[]>([]);
-    const [currency, setCurrency] = useState<string>('usd');
+    const defaultCurrency = locale === 'kr' ? 'krw' : 'usd';
+    const [currencyPick, setCurrencyPick] = useState<{ code: string; forLocale: string } | null>(null);
+    const currency =
+        currencyPick?.forLocale === locale ? currencyPick.code : defaultCurrency;
+    const setCurrency = (code: string) => setCurrencyPick({ code, forLocale: locale });
     const [packagesLoading, setPackagesLoading] = useState(true);
     const [tiersLoading, setTiersLoading] = useState(true);
     const [infoLoading, setInfoLoading] = useState(true);
@@ -150,10 +154,6 @@ export default function DonatePage() {
             }
         })();
     }, []);
-
-    useEffect(() => {
-        setCurrency(locale === 'kr' ? 'krw' : 'usd');
-    }, [locale]);
 
     const DonationData: DonationPackage[] = donationData?.DonationData || [
         { id: 1, price: 5, CP: 50 },

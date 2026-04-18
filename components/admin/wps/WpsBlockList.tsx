@@ -1,82 +1,90 @@
 'use client';
 
-import type { WpsScript } from '@/lib/wps/types';
-import { getBody } from '@/lib/wps/scriptMutate';
+import { memo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import type { WpsBlock, WpsScript } from '@/lib/wps/types';
 import { WpsBlockCard } from './WpsBlockCard';
 import { WpsDropZone } from './WpsDropZone';
-import { addBlock, moveBlock } from '@/lib/wps/scriptMutate';
 import { useLocale } from '@/components/LocaleProvider';
 
 type WpsBlockListProps = {
-  script: WpsScript;
-  setScript: (s: WpsScript) => void;
+  body: WpsBlock[];
+  setScript: Dispatch<SetStateAction<WpsScript>>;
   sectionIdx: number;
-  blockIndices: number[];
+  pathKey: string;
+  collapsedIds: Set<string>;
+  onToggleCollapsed: (id: string) => void;
+  isDragActive: boolean;
+  selectedPathKey: string | null;
+  onSelectBlock: (pathKey: string) => void;
+  showAllDetails: boolean;
 };
 
-export function WpsBlockList({
-  script,
+function WpsBlockListComponent({
+  body,
   setScript,
   sectionIdx,
-  blockIndices,
+  pathKey,
+  collapsedIds,
+  onToggleCollapsed,
+  isDragActive,
+  selectedPathKey,
+  onSelectBlock,
+  showAllDetails,
 }: WpsBlockListProps) {
   const { locale } = useLocale();
   const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
-  const body = getBody(script, sectionIdx, blockIndices);
-
-  function handleDropPalette(
-    secIdx: number,
-    blkIndices: number[],
-    idx: number,
-    kind: 'action' | 'condition',
-    name: string
-  ) {
-    setScript(addBlock(script, secIdx, blkIndices, idx, kind, name));
-  }
-
-  function handleDropBlock(
-    fromSectionIdx: number,
-    fromBlockIndices: number[],
-    fromIndex: number,
-    toSectionIdx: number,
-    toBlockIndices: number[],
-    toIndex: number
-  ) {
-    setScript(
-      moveBlock(script, fromSectionIdx, fromBlockIndices, fromIndex, toSectionIdx, toBlockIndices, toIndex)
-    );
-  }
 
   return (
     <div className="space-y-2">
       {body.map((block, i) => (
-        <div key={`${sectionIdx}-${blockIndices.join('-')}-${i}`} className="space-y-2">
+        <div key={block.uiId ?? `${sectionIdx}-${pathKey}-${i}`} className="space-y-2">
           <WpsDropZone
+            dropZoneId={`${sectionIdx}:${pathKey}:${i}`}
             sectionIdx={sectionIdx}
-            blockIndices={blockIndices}
+            pathKey={pathKey}
             insertIndex={i}
-            onDropPalette={handleDropPalette}
-            onDropBlock={handleDropBlock}
+            isDragActive={isDragActive}
           />
           <WpsBlockCard
-            script={script}
             setScript={setScript}
             sectionIdx={sectionIdx}
-            blockIndices={blockIndices}
+            parentPathKey={pathKey}
             index={i}
             block={block}
+            collapsedIds={collapsedIds}
+            onToggleCollapsed={onToggleCollapsed}
+            isDragActive={isDragActive}
+            selectedPathKey={selectedPathKey}
+            onSelectBlock={onSelectBlock}
+            showAllDetails={showAllDetails}
           />
         </div>
       ))}
       <WpsDropZone
+        dropZoneId={`${sectionIdx}:${pathKey}:${body.length}`}
         sectionIdx={sectionIdx}
-        blockIndices={blockIndices}
+        pathKey={pathKey}
         insertIndex={body.length}
-        onDropPalette={handleDropPalette}
-        onDropBlock={handleDropBlock}
+        isDragActive={isDragActive}
       >
-        <span className="inline-block px-2 py-2 text-xs text-white/40">{tx('Drop block here', '여기에 블록 놓기')}</span>
+        <span className="inline-flex min-h-[52px] items-center px-3 text-xs text-white/55">{tx('Drop block here', '여기에 블록 놓기')}</span>
       </WpsDropZone>
     </div>
   );
 }
+
+export const WpsBlockList = memo(
+  WpsBlockListComponent,
+  (prev, next) =>
+    prev.body === next.body &&
+    prev.pathKey === next.pathKey &&
+    prev.collapsedIds === next.collapsedIds &&
+    prev.isDragActive === next.isDragActive &&
+    prev.selectedPathKey === next.selectedPathKey &&
+    prev.showAllDetails === next.showAllDetails &&
+    prev.setScript === next.setScript &&
+    prev.onSelectBlock === next.onSelectBlock &&
+    prev.onToggleCollapsed === next.onToggleCollapsed &&
+    prev.sectionIdx === next.sectionIdx
+);
