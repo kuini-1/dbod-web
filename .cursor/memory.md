@@ -89,6 +89,14 @@
 - Example: Correct: create level milestone -> pick item in separate catalog assignment panel. Wrong: milestone row directly requires choosing item at creation time.
 - Last updated: 2026-04-15
 
+## [Website] — WPS Keep Blocks Open While Dragging
+- Importance: ⛔ CRITICAL
+- Correction count: 1
+- Rule: In the WPS editor, dragging blocks must not hide or collapse block params and children; keep opened block details visible while dragging so placement stays understandable.
+- Context: Website
+- Example: Correct: opened blocks remain visible during drag. Wrong: dragging temporarily closes or hides params/children.
+- Last updated: 2026-04-16
+
 ---
 
 ## 📊 Correction Log

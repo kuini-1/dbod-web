@@ -156,11 +156,22 @@ export const WPS_PARAM_SCHEMA: BlockParamSchema = {
   // This schema is for suggestions and validation hints only.
 };
 
+const NORMALIZED_WPS_PARAM_SCHEMA = Object.fromEntries(
+  Object.entries(WPS_PARAM_SCHEMA).map(([blockName, params]) => [blockName.toLowerCase(), params])
+) as BlockParamSchema;
+
+const PARAM_LOOKUP_BY_BLOCK = Object.fromEntries(
+  Object.entries(NORMALIZED_WPS_PARAM_SCHEMA).map(([blockName, params]) => [
+    blockName,
+    Object.fromEntries(params.map((param) => [param.name.toLowerCase(), param])),
+  ])
+) as Record<string, Record<string, ParamInfo>>;
+
 /**
  * Get parameter schema for a block (action or condition)
  */
 export function getBlockParams(blockName: string): ParamInfo[] {
-  return WPS_PARAM_SCHEMA[blockName.toLowerCase()] || [];
+  return NORMALIZED_WPS_PARAM_SCHEMA[blockName.toLowerCase()] || [];
 }
 
 /**
@@ -175,7 +186,5 @@ export function isValidParam(blockName: string, paramName: string): boolean {
  * Get valid values for a string parameter (if restricted)
  */
 export function getParamValidValues(blockName: string, paramName: string): string[] | undefined {
-  const params = getBlockParams(blockName);
-  const param = params.find((p) => p.name.toLowerCase() === paramName.toLowerCase());
-  return param?.validValues;
+  return PARAM_LOOKUP_BY_BLOCK[blockName.toLowerCase()]?.[paramName.toLowerCase()]?.validValues;
 }

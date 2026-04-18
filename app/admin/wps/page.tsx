@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { useCallback, useEffect, useState } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { API } from '@/lib/api/client';
 import AdminShell from '@/components/admin/AdminShell';
 import AdminCard from '@/components/admin/AdminCard';
@@ -9,10 +11,18 @@ import { WpsSectionCard } from '@/components/admin/wps/WpsSectionCard';
 import { WpsWorkflowView } from '@/components/admin/wps/WpsWorkflowView';
 import { parseWpsScript } from '@/lib/wps/parser';
 import { serializeWpsScript } from '@/lib/wps/serializer';
-import { createEmptyScript, createSection } from '@/lib/wps/types';
-import { addSection } from '@/lib/wps/scriptMutate';
+import { createEmptyScript, createSection, ensureScriptEditorIds } from '@/lib/wps/types';
+import { addBlock, addSection, moveBlock } from '@/lib/wps/scriptMutate';
 import type { WpsScript } from '@/lib/wps/types';
 import { useLocale } from '@/components/LocaleProvider';
+import {
+  isDescendantDropTarget,
+  isWpsBlockDragPayload,
+  isWpsDragPayload,
+  isWpsDropTarget,
+  type WpsDragPayload,
+  type WpsDropTarget,
+} from '@/components/admin/wps/editorUi';
 
 type WpsFile = { id: number; name: string };
 
@@ -31,6 +41,39 @@ export default function AdminWpsPage() {
   const [wpsSaving, setWpsSaving] = useState(false);
   const [actionResult, setActionResult] = useState('');
   const [parseError, setParseError] = useState('');
+  const [collapsedSectionIds, setCollapsedSectionIds] = useState<Set<string>>(new Set());
+  const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(new Set());
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [selectedBlockPathKey, setSelectedBlockPathKey] = useState<string | null>(null);
+  const [showAllBlockDetails, setShowAllBlockDetails] = useState(false);
+
+  const setVisualScript = useCallback<Dispatch<SetStateAction<WpsScript>>>((nextValue) => {
+    setWpsScript((current) =>
+      ensureScriptEditorIds(
+        typeof nextValue === 'function'
+          ? (nextValue as (prev: WpsScript) => WpsScript)(current)
+          : nextValue
+      )
+    );
+  }, []);
+
+  const toggleSectionCollapsed = useCallback((id: string) => {
+    setCollapsedSectionIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleBlockCollapsed = useCallback((id: string) => {
+    setCollapsedBlockIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   async function loadWpsList() {
     setWpsListError('');
@@ -63,7 +106,11 @@ export default function AdminWpsPage() {
       setWpsContent(content);
       setWpsEditingId(data.id ?? id);
       try {
-        const script = parseWpsScript(content);
+        const script = ensureScriptEditorIds(parseWpsScript(content));
+        setCollapsedSectionIds(new Set());
+        setCollapsedBlockIds(new Set());
+        setSelectedBlockPathKey(null);
+        setShowAllBlockDetails(false);
         if (script.sections.length === 0) {
           setWpsScript(createEmptyScript());
         } else {
@@ -88,8 +135,10 @@ export default function AdminWpsPage() {
   function switchToVisual() {
     setParseError('');
     try {
-      const script = parseWpsScript(wpsContent);
+      const script = ensureScriptEditorIds(parseWpsScript(wpsContent));
       setWpsScript(script.sections.length > 0 ? script : createEmptyScript());
+        setSelectedBlockPathKey(null);
+        setShowAllBlockDetails(false);
       setViewMode('visual');
     } catch (_) {
       setParseError('Invalid WPS syntax; fix the text before switching to visual.');
@@ -100,7 +149,7 @@ export default function AdminWpsPage() {
     if (viewMode === 'source') {
       setParseError('');
       try {
-        const script = parseWpsScript(wpsContent);
+        const script = ensureScriptEditorIds(parseWpsScript(wpsContent));
         setWpsScript(script.sections.length > 0 ? script : createEmptyScript());
       } catch (_) {
         setParseError('Invalid WPS syntax; fix the text before switching to workflow.');
@@ -160,18 +209,60 @@ export default function AdminWpsPage() {
     setWpsScript(createEmptyScript());
     setWpsContentError('');
     setParseError('');
+    setCollapsedSectionIds(new Set());
+    setCollapsedBlockIds(new Set());
+    setSelectedBlockPathKey(null);
+    setShowAllBlockDetails(false);
   }
 
   function handleAddStage() {
     const nextStage = wpsScript.sections.filter((s) => s.type === 'gameStage').length;
-    setWpsScript(addSection(wpsScript, createSection('gameStage', nextStage)));
+    setVisualScript(addSection(wpsScript, createSection('gameStage', nextStage)));
   }
 
   function handleAddGameFailed() {
     const hasFailed = wpsScript.sections.some((s) => s.type === 'gameFailed');
     if (hasFailed) return;
-    setWpsScript(addSection(wpsScript, createSection('gameFailed')));
+    setVisualScript(addSection(wpsScript, createSection('gameFailed')));
   }
+
+  const applyDrop = useCallback((payload: WpsDragPayload, target: WpsDropTarget) => {
+    setVisualScript((current) => {
+      if (payload.type === 'palette') {
+        return addBlock(current, target.sectionIdx, target.blockIndices, target.insertIndex, payload.kind, payload.name);
+      }
+      if (isDescendantDropTarget(payload, target)) {
+        return current;
+      }
+      return moveBlock(
+        current,
+        payload.sectionIdx,
+        payload.blockIndices,
+        payload.index,
+        target.sectionIdx,
+        target.blockIndices,
+        target.insertIndex
+      );
+    });
+  }, [setVisualScript]);
+
+  useEffect(() => {
+    return monitorForElements({
+      onDragStart() {
+        setIsDragActive(true);
+      },
+      onDrop({ source, location }) {
+        setIsDragActive(false);
+        if (!isWpsDragPayload(source.data)) return;
+        const destination = location.current.dropTargets[0];
+        if (!destination || !isWpsDropTarget(destination.data)) return;
+        if (isWpsBlockDragPayload(source.data) && isDescendantDropTarget(source.data, destination.data)) {
+          return;
+        }
+        applyDrop(source.data, destination.data);
+      },
+    });
+  }, [applyDrop]);
 
   useEffect(() => {
     loadWpsList();
@@ -338,14 +429,30 @@ export default function AdminWpsPage() {
                   >
                     + Game Failed
                   </button>
+                  <label className="ml-2 flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-3 py-2 text-sm text-white/80">
+                    <input
+                      type="checkbox"
+                      checked={showAllBlockDetails}
+                      onChange={(e) => setShowAllBlockDetails(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    Show all details
+                  </label>
                 </div>
                 {wpsScript.sections.map((section, sectionIdx) => (
                   <WpsSectionCard
-                    key={section.type === 'gameStage' ? `stage-${sectionIdx}-${section.stageNumber}` : `failed-${sectionIdx}`}
-                    script={wpsScript}
-                    setScript={setWpsScript}
+                    key={section.uiId ?? (section.type === 'gameStage' ? `stage-${sectionIdx}-${section.stageNumber}` : `failed-${sectionIdx}`)}
+                    setScript={setVisualScript}
                     sectionIdx={sectionIdx}
                     section={section}
+                    isCollapsed={collapsedSectionIds.has(section.uiId ?? `section-${sectionIdx}`)}
+                    onToggleCollapsed={() => toggleSectionCollapsed(section.uiId ?? `section-${sectionIdx}`)}
+                    collapsedIds={collapsedBlockIds}
+                    onToggleCollapsedBlock={toggleBlockCollapsed}
+                    isDragActive={isDragActive}
+                    selectedPathKey={selectedBlockPathKey}
+                    onSelectBlock={setSelectedBlockPathKey}
+                    showAllDetails={showAllBlockDetails}
                   />
                 ))}
               </div>

@@ -51,6 +51,14 @@ export function addBlock(
 }
 
 /** Insert an existing block (e.g. when moving). */
+function cloneBlock(block: WpsBlock): WpsBlock {
+  return {
+    ...block,
+    params: { ...block.params },
+    body: block.body.map(cloneBlock),
+  };
+}
+
 export function insertBlock(
   script: WpsScript,
   sectionIdx: number,
@@ -60,7 +68,7 @@ export function insertBlock(
 ): WpsScript {
   const body = getBody(script, sectionIdx, blockIndices);
   const newBody = [...body];
-  newBody.splice(atIndex, 0, { ...block, params: { ...block.params }, body: block.body.map((b) => ({ ...b, params: { ...b.params }, body: [...b.body] })) });
+  newBody.splice(atIndex, 0, cloneBlock(block));
   return setBody(script, sectionIdx, blockIndices, newBody);
 }
 

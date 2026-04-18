@@ -1,75 +1,87 @@
 'use client';
 
-import { useState } from 'react';
-import { DRAG_TYPE_PALETTE } from './BlockPalette';
-
-const DRAG_TYPE_BLOCK = 'application/x-wps-block';
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import type { ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
+import {
+  isDescendantDropTarget,
+  isWpsBlockDragPayload,
+  isWpsDragPayload,
+  pathKeyToIndices,
+  type WpsDropTarget,
+} from './editorUi';
 
 type DropZoneProps = {
+  dropZoneId: string;
   sectionIdx: number;
-  blockIndices: number[];
+  pathKey: string;
   insertIndex: number;
-  onDropPalette: (sectionIdx: number, blockIndices: number[], index: number, kind: 'action' | 'condition', name: string) => void;
-  onDropBlock: (fromSectionIdx: number, fromBlockIndices: number[], fromIndex: number, toSectionIdx: number, toBlockIndices: number[], toIndex: number) => void;
-  children?: React.ReactNode;
+  isDragActive: boolean;
+  children?: ReactNode;
 };
 
-export function WpsDropZone({
+function WpsDropZoneComponent({
+  dropZoneId,
   sectionIdx,
-  blockIndices,
+  pathKey,
   insertIndex,
-  onDropPalette,
-  onDropBlock,
+  isDragActive,
   children,
 }: DropZoneProps) {
-  const [isOver, setIsOver] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const blockIndices = useMemo(() => pathKeyToIndices(pathKey), [pathKey]);
+  const targetData = useMemo<WpsDropTarget>(() => ({
+    type: 'dropzone',
+    dropZoneId,
+    sectionIdx,
+    blockIndices,
+    insertIndex,
+  }), [blockIndices, dropZoneId, insertIndex, sectionIdx]);
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-    setIsOver(true);
-  }
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const inactiveClasses = ['border-white/15', 'bg-white/[0.02]'];
+    const activeClasses = ['border-sky-400/80', 'bg-sky-400/15'];
+    const setActive = (value: boolean) => {
+      element.classList.toggle(activeClasses[0], value);
+      element.classList.toggle(activeClasses[1], value);
+      element.classList.toggle(inactiveClasses[0], !value);
+      element.classList.toggle(inactiveClasses[1], !value);
+    };
 
-  function handleDragLeave() {
-    setIsOver(false);
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setIsOver(false);
-    const palette = e.dataTransfer.getData(DRAG_TYPE_PALETTE);
-    if (palette) {
-      try {
-        const { kind, name } = JSON.parse(palette) as { kind: 'action' | 'condition'; name: string };
-        onDropPalette(sectionIdx, blockIndices, insertIndex, kind, name);
-      } catch (_) {}
-      return;
-    }
-    const block = e.dataTransfer.getData(DRAG_TYPE_BLOCK);
-    if (block) {
-      try {
-        const { sectionIdx: fromSectionIdx, blockIndices: fromBlockIndices, index: fromIndex } = JSON.parse(block) as {
-          sectionIdx: number;
-          blockIndices: number[];
-          index: number;
-        };
-        onDropBlock(fromSectionIdx, fromBlockIndices, fromIndex, sectionIdx, blockIndices, insertIndex);
-      } catch (_) {}
-    }
-  }
+    return dropTargetForElements({
+      element,
+      getData: () => targetData,
+      getIsSticky: () => false,
+      canDrop: ({ source }) => {
+        if (!isWpsDragPayload(source.data)) return false;
+        if (isWpsBlockDragPayload(source.data) && isDescendantDropTarget(source.data, targetData)) {
+          return false;
+        }
+        return true;
+      },
+      onDragEnter: () => setActive(true),
+      onDrag: () => setActive(true),
+      onDragLeave: () => setActive(false),
+      onDrop: () => setActive(false),
+    });
+  }, [targetData]);
 
   return (
     <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      className={`min-h-[28px] rounded border-2 border-dashed transition ${
-        isOver ? 'border-white/50 bg-white/10' : 'border-white/10 hover:border-white/20'
+      ref={ref}
+      className={`rounded border-2 border-dashed border-white/15 bg-white/[0.02] ${
+        isDragActive ? 'min-h-[52px]' : 'min-h-[18px]'
       }`}
     >
-      {children}
+      {children ?? (
+        <div className={`flex h-full items-center px-3 text-[11px] text-white/45 ${isDragActive ? 'opacity-100' : 'opacity-0'}`}>
+          Drop here
+        </div>
+      )}
     </div>
   );
 }
 
-export { DRAG_TYPE_BLOCK };
+export const WpsDropZone = memo(WpsDropZoneComponent);
