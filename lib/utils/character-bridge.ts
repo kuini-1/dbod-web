@@ -81,3 +81,18 @@ export async function syncItemWorth(charId: number, value: number): Promise<void
         console.error('Bridge update-item-worth error:', err);
     }
 }
+
+export async function syncPurchasedSP(charId: number, boughtSP: number, spPoint: number): Promise<void> {
+    try {
+        const res = await postToBridge('/api/update-purchased-sp', {
+            CharID: charId,
+            BoughtSP: boughtSP,
+            SpPoint: spPoint,
+        });
+        if (!res.ok) {
+            console.error('Bridge update-purchased-sp failed:', res.status, await res.text());
+        }
+    } catch (err) {
+        console.error('Bridge update-purchased-sp error:', err);
+    }
+}

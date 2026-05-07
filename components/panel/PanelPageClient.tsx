@@ -18,7 +18,8 @@ import {
     faCheckCircle,
     faClock,
     faArrowUp,
-    faCircleInfo
+    faCircleInfo,
+    faPlus
 } from '@fortawesome/free-solid-svg-icons';
 import { API } from '@/lib/api/client';
 import { local } from '@/lib/utils/localize';
@@ -50,6 +51,7 @@ interface CharactersProps {
     CCBD_Limit?: number;
     CCBD_Entry?: number;
     Item_Worth?: number;
+    BoughtSP?: number;
 }
 
 interface DonationLogProps {
@@ -165,7 +167,7 @@ const UserInfo = ({
     );
 };
 
-const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersProps; onUpgradeClick: () => void; onDetailsClick: () => void }) => {
+const Character = ({ char, onUpgradeClick, onDetailsClick, onPurchaseSpClick }: { char: CharactersProps; onUpgradeClick: () => void; onDetailsClick: () => void; onPurchaseSpClick: () => void }) => {
     const { locale } = useLocale();
     const tx = (en: string, kr: string) => (locale === 'kr' ? kr : en);
     const canUpgrade = Number(char.CCBD_Token ?? 0) >= 5;
@@ -191,24 +193,32 @@ const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersP
                         <h3 className='text-lg font-bold text-red-400 truncate'>{char.CharName}</h3>
                         <div className='mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60'>
                             <span>{local.sp}: <span className='text-red-400/90'>{char.SpPoint}</span></span>
+                            <span>{tx('Bought SP', '구매 SP')}: <span className='text-red-400/90'>{char.BoughtSP ?? 0}</span></span>
                             <span>{tx('Tokens', '토큰')}: <span className='text-red-400/90'>{char.CCBD_Token ?? 0}</span></span>
                         </div>
                     </div>
                 </div>
-                <div className='mt-4 flex gap-2'>
+                <div className='mt-4 flex flex-wrap gap-2'>
                     <button
                         onClick={onDetailsClick}
-                        className='flex-1 flex items-center justify-center gap-2 rounded-lg border border-white/5 bg-stone-800/50 px-4 py-2.5 text-sm font-medium text-white/70 transition-all duration-300 hover:border-red-500/50 hover:text-red-400 cursor-pointer'
+                        className='flex-1 min-w-[108px] whitespace-nowrap flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-stone-800/60 px-3 py-2.5 text-xs font-semibold tracking-wide text-white/70 transition-all duration-300 hover:border-red-500/50 hover:text-red-300 hover:bg-stone-800 cursor-pointer'
                     >
                         <FontAwesomeIcon icon={faCircleInfo} className='text-sm' />
                         <span>{tx('Details', '상세')}</span>
                     </button>
                     <button
+                        onClick={onPurchaseSpClick}
+                        className='flex-1 min-w-[132px] whitespace-nowrap flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2.5 text-xs font-semibold tracking-wide text-red-200 transition-all duration-300 hover:border-red-400/60 hover:bg-red-500/20 cursor-pointer'
+                    >
+                        <FontAwesomeIcon icon={faPlus} className='text-sm' />
+                        <span>{tx('Purchase SP', 'SP 구매')}</span>
+                    </button>
+                    <button
                         onClick={onUpgradeClick}
-                        className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 cursor-pointer ${
+                        className={`flex-1 min-w-[120px] whitespace-nowrap flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold tracking-wide transition-all duration-300 cursor-pointer ${
                             canUpgrade
-                                ? 'border border-red-500/50 bg-red-500/15 text-red-300 hover:bg-red-500/25 hover:border-red-400'
-                                : 'border border-white/5 bg-stone-800/50 text-red-400/90 hover:border-red-500/50 hover:text-red-400'
+                                ? 'border border-red-500/50 bg-red-500/20 text-red-200 hover:bg-red-500/30 hover:border-red-400'
+                                : 'border border-white/10 bg-stone-800/60 text-red-300/90 hover:border-red-500/50 hover:text-red-300'
                         }`}
                     >
                         <FontAwesomeIcon icon={faArrowUp} className='text-sm' />
@@ -220,7 +230,7 @@ const Character = ({ char, onUpgradeClick, onDetailsClick }: { char: CharactersP
     );
 };
 
-const Characters = ({ characters, onUpgradeClick, onDetailsClick }: { characters: CharactersProps[]; onUpgradeClick: (char: CharactersProps) => void; onDetailsClick: (char: CharactersProps) => void }) => {
+const Characters = ({ characters, onUpgradeClick, onDetailsClick, onPurchaseSpClick }: { characters: CharactersProps[]; onUpgradeClick: (char: CharactersProps) => void; onDetailsClick: (char: CharactersProps) => void; onPurchaseSpClick: (char: CharactersProps) => void }) => {
     return (
         <div className='space-y-6'>
             <h2 className='text-2xl font-bold text-white/60'>{local.characters}</h2>
@@ -231,6 +241,7 @@ const Characters = ({ characters, onUpgradeClick, onDetailsClick }: { characters
                         char={char}
                         onUpgradeClick={() => onUpgradeClick(char)}
                         onDetailsClick={() => onDetailsClick(char)}
+                        onPurchaseSpClick={() => onPurchaseSpClick(char)}
                     />
                 ))}
             </div>
@@ -280,9 +291,21 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
     const [loading, setLoading] = useState(true);
     const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
     const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+    const [purchaseSpModalOpen, setPurchaseSpModalOpen] = useState(false);
+    const [purchaseSpConfirmOpen, setPurchaseSpConfirmOpen] = useState(false);
+    const [purchaseSpQuantity, setPurchaseSpQuantity] = useState(1);
+    const [purchaseSpLoading, setPurchaseSpLoading] = useState(false);
     const [selectedChar, setSelectedChar] = useState<CharactersProps | null>(null);
     const { register, handleSubmit } = useForm();
     const hasUpgradeableCharacter = characters.some((char) => Number(char.CCBD_Token ?? 0) >= 5);
+    const spUnitCost = 10;
+    const maxPurchasedSpTotal = 100;
+    const selectedCharBoughtSP = Math.max(0, Number(selectedChar?.BoughtSP ?? 0));
+    const remainingPurchasableSP = Math.max(0, maxPurchasedSpTotal - selectedCharBoughtSP);
+    const normalizedPurchaseQuantity = remainingPurchasableSP > 0
+        ? Math.min(Math.max(1, purchaseSpQuantity), remainingPurchasableSP)
+        : 0;
+    const spTotalCost = normalizedPurchaseQuantity * spUnitCost;
 
     const fetchCharacters = async () => {
         try {
@@ -309,6 +332,79 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
         } catch (error) {
             DangerToast.fire(tx('Unknown error!', '알 수 없는 오류!'));
         }
+    };
+
+    const closePurchaseSpModal = () => {
+        setPurchaseSpModalOpen(false);
+        setPurchaseSpConfirmOpen(false);
+        setPurchaseSpQuantity(1);
+        setSelectedChar(null);
+    };
+
+    const executePurchaseSp = async (quantity: number, totalCost: number) => {
+        if (!selectedChar?.CharID) return;
+        setPurchaseSpLoading(true);
+        try {
+            const res = await API.post('/characters/purchase-sp', {
+                charId: selectedChar.CharID,
+                quantity,
+            });
+
+            if (res.status === 200 && res.data?.success) {
+                const updatedCharacter = res.data.character;
+                setAccount((current) => current ? { ...current, mallpoints: res.data.mallpoints } : current);
+                setCharacters((current) => current.map((char) => (
+                    char.CharID === updatedCharacter.CharID
+                        ? { ...char, SpPoint: updatedCharacter.SpPoint, BoughtSP: updatedCharacter.BoughtSP }
+                        : char
+                )));
+                SuccessToast.fire(tx('SP purchased successfully.', 'SP 구매가 완료되었습니다.'));
+                closePurchaseSpModal();
+            } else if (res.status === 402) {
+                WarningToast.fire(tx('Not enough cash points.', '캐시 포인트가 부족합니다.'));
+            } else {
+                DangerToast.fire(res.data?.message || tx('Failed to purchase SP.', 'SP 구매에 실패했습니다.'));
+            }
+        } catch (error: any) {
+            if (error?.response?.status === 402) {
+                WarningToast.fire(tx('Not enough cash points.', '캐시 포인트가 부족합니다.'));
+            } else {
+                DangerToast.fire(error?.response?.data?.message || tx('Failed to purchase SP.', 'SP 구매에 실패했습니다.'));
+            }
+        } finally {
+            setPurchaseSpLoading(false);
+        }
+    };
+
+    const purchaseSp = async () => {
+        const quantity = Math.floor(Number(purchaseSpQuantity));
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+            DangerToast.fire(tx('Please enter a valid SP amount.', '올바른 SP 수량을 입력하세요.'));
+            return;
+        }
+
+        if (remainingPurchasableSP <= 0) {
+            WarningToast.fire(tx('This character already reached the max purchased SP (100).', '이 캐릭터는 이미 구매 SP 최대치(100)에 도달했습니다.'));
+            return;
+        }
+
+        if (quantity > remainingPurchasableSP) {
+            WarningToast.fire(
+                tx(
+                    `You can only purchase up to ${remainingPurchasableSP} more SP.`,
+                    `최대 ${remainingPurchasableSP} SP까지만 추가 구매할 수 있습니다.`
+                )
+            );
+            return;
+        }
+
+        const totalCost = quantity * spUnitCost;
+        if ((account?.mallpoints ?? 0) < totalCost) {
+            WarningToast.fire(tx('Not enough cash points.', '캐시 포인트가 부족합니다.'));
+            return;
+        }
+
+        setPurchaseSpConfirmOpen(true);
     };
 
     useEffect(() => {
@@ -508,6 +604,13 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
                                             setSelectedChar(char);
                                             setDetailsModalOpen(true);
                                         }}
+                                        onPurchaseSpClick={(char) => {
+                                            setSelectedChar(char);
+                                            const bought = Math.max(0, Number(char.BoughtSP ?? 0));
+                                            const remaining = Math.max(0, maxPurchasedSpTotal - bought);
+                                            setPurchaseSpQuantity(remaining > 0 ? 1 : 0);
+                                            setPurchaseSpModalOpen(true);
+                                        }}
                                     />
                                 )}
                             </>
@@ -549,6 +652,140 @@ export default function PanelPageClient({ activeTab, redirectPath }: { activeTab
                     setSelectedChar(null);
                 }}
             />
+
+            {purchaseSpModalOpen && selectedChar ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-white/10 bg-stone-900 p-6 shadow-2xl shadow-black/40">
+                        <div className="mb-5">
+                            <p className="text-sm font-semibold uppercase tracking-wide text-red-300">{tx('Purchase SP', 'SP 구매')}</p>
+                            <h2 className="mt-1 text-2xl font-bold text-white">{selectedChar.CharName}</h2>
+                            <p className="mt-2 text-sm text-white/55">{tx('Choose how many skill points to buy for this character.', '이 캐릭터에 구매할 스킬 포인트 수량을 선택하세요.')}</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="rounded-xl border border-white/5 bg-stone-800/60 p-4">
+                                <div className="flex items-center justify-between text-sm text-white/60">
+                                    <span>{tx('Rate', '요율')}</span>
+                                    <span className="font-semibold text-red-300">1 SP = {spUnitCost} CP</span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between text-sm text-white/60">
+                                    <span>{tx('Your Cash Points', '보유 캐시 포인트')}</span>
+                                    <span className="font-semibold text-white">{account?.mallpoints ?? 0} CP</span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between text-sm text-white/60">
+                                    <span>{tx('Current SP', '현재 SP')}</span>
+                                    <span className="font-semibold text-white">{selectedChar.SpPoint}</span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between text-sm text-white/60">
+                                    <span>{tx('Purchased SP Limit', '구매 SP 제한')}</span>
+                                    <span className="font-semibold text-white">{selectedCharBoughtSP}/{maxPurchasedSpTotal}</span>
+                                </div>
+                                <div className="mt-2 flex items-center justify-between text-sm text-white/60">
+                                    <span>{tx('Remaining Purchasable', '추가 구매 가능')}</span>
+                                    <span className="font-semibold text-white">{remainingPurchasableSP}</span>
+                                </div>
+                            </div>
+
+                            <label className="block">
+                                <span className="text-sm font-medium text-white/70">{tx('SP Amount', 'SP 수량')}</span>
+                                <input
+                                    type="number"
+                                    min={remainingPurchasableSP > 0 ? 1 : 0}
+                                    max={remainingPurchasableSP}
+                                    value={purchaseSpQuantity}
+                                    onChange={(event) => {
+                                        const next = Math.floor(Number(event.target.value || 0));
+                                        if (!Number.isFinite(next)) {
+                                            setPurchaseSpQuantity(remainingPurchasableSP > 0 ? 1 : 0);
+                                            return;
+                                        }
+                                        if (remainingPurchasableSP <= 0) {
+                                            setPurchaseSpQuantity(0);
+                                            return;
+                                        }
+                                        setPurchaseSpQuantity(Math.min(remainingPurchasableSP, Math.max(1, next)));
+                                    }}
+                                    className="mt-2 w-full rounded-xl border border-white/10 bg-stone-800 px-4 py-3 text-lg font-semibold text-white outline-none transition-colors focus:border-red-500/60"
+                                />
+                            </label>
+
+                            <div className="rounded-xl bg-red-500/10 p-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-white/70">{tx('Total Cost', '총 비용')}</span>
+                                    <span className="text-xl font-bold text-red-300">{spTotalCost} CP</span>
+                                </div>
+                                <p className="mt-1 text-xs text-white/45">
+                                    {tx('Your in-game SP updates immediately if the character is online.', '캐릭터가 온라인이면 게임 내 SP가 즉시 갱신됩니다.')}
+                                </p>
+                                {remainingPurchasableSP <= 0 ? (
+                                    <p className="mt-2 text-xs font-semibold text-amber-300">
+                                        {tx('This character already reached the 100 purchased SP cap.', '이 캐릭터는 구매 SP 최대치 100에 도달했습니다.')}
+                                    </p>
+                                ) : null}
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex gap-3">
+                            <button
+                                type="button"
+                                onClick={closePurchaseSpModal}
+                                disabled={purchaseSpLoading}
+                                className="flex-1 rounded-xl border border-white/10 bg-stone-800 px-4 py-3 font-semibold text-white/70 transition-colors hover:border-white/20 hover:text-white disabled:opacity-60"
+                            >
+                                {tx('Cancel', '취소')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={purchaseSp}
+                                disabled={purchaseSpLoading || remainingPurchasableSP <= 0 || (account?.mallpoints ?? 0) < spTotalCost}
+                                className="flex-1 rounded-xl border border-red-500/40 bg-red-500/20 px-4 py-3 font-semibold text-red-200 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {purchaseSpLoading ? tx('Purchasing...', '구매 중...') : tx('Purchase', '구매')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            {purchaseSpConfirmOpen && selectedChar ? (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+                    <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-stone-900 p-6 shadow-2xl shadow-black/40">
+                        <p className="text-sm font-semibold uppercase tracking-wide text-red-300">{tx('Confirm Purchase', '구매 확인')}</p>
+                        <h3 className="mt-1 text-xl font-bold text-white">{selectedChar.CharName}</h3>
+                        <div className="mt-4 space-y-2 text-sm text-white/70">
+                            <div className="flex items-center justify-between">
+                                <span>{tx('SP to purchase', '구매 SP')}</span>
+                                <span className="font-semibold text-white">+{normalizedPurchaseQuantity}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span>{tx('Total cost', '총 비용')}</span>
+                                <span className="font-semibold text-red-300">{spTotalCost} CP</span>
+                            </div>
+                        </div>
+                        <p className="mt-4 text-xs text-white/50">
+                            {tx('This action will spend cash points immediately.', '이 작업은 즉시 캐시 포인트를 차감합니다.')}
+                        </p>
+                        <div className="mt-6 flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setPurchaseSpConfirmOpen(false)}
+                                disabled={purchaseSpLoading}
+                                className="flex-1 rounded-xl border border-white/10 bg-stone-800 px-4 py-3 font-semibold text-white/70 transition-colors hover:border-white/20 hover:text-white disabled:opacity-60"
+                            >
+                                {tx('Back', '뒤로')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => executePurchaseSp(normalizedPurchaseQuantity, spTotalCost)}
+                                disabled={purchaseSpLoading}
+                                className="flex-1 rounded-xl border border-red-500/40 bg-red-500/20 px-4 py-3 font-semibold text-red-200 transition-colors hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {purchaseSpLoading ? tx('Purchasing...', '구매 중...') : tx('Confirm', '확인')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 }

@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
                 'CCBD_Token',
                 'CCBD_Limit',
                 'CCBD_Entry',
-                'Item_Worth'
+                'Item_Worth',
+                'BoughtSP'
             ],
             order: [
                 ['Level', 'DESC'],
