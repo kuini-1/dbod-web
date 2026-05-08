@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { API } from '../lib/api/client';
 import { useLocale } from './LocaleProvider';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faDiscord } from '@fortawesome/free-brands-svg-icons';
 import {
     Select,
     SelectContent,
@@ -172,6 +174,15 @@ export function Navbar({ hasLevelupNotification = false }: NavbarProps) {
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
+                        <a
+                            href="https://discord.gg/yGP4UAVujd"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label="Join Discord"
+                            className="text-stone-300 hover:text-red-400 transition-colors"
+                        >
+                            <FontAwesomeIcon icon={faDiscord} className="h-5 w-5" />
+                        </a>
                         <Select value={locale} onValueChange={(value) => setLocale(value as 'en' | 'kr')}>
                             <SelectTrigger aria-label={t('navItemLanguage')} className="h-8 w-[88px] border-stone-700 bg-stone-800 text-stone-200">
                                 <SelectValue />
