@@ -1,0 +1,35 @@
+/* Skill calculator host: legacy #MAIN uses fixed side margins and beats Tailwind mx-auto (id > class). */
+#MAIN.skill-calc-tabs-host {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 0 !important;
+  width: 100%;
+  max-width: 1100px;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  z-index: auto;
+}
+
+/* Skill calculator: tab layout overrides legacy float-based #MAIN rules */
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel .class-tree,
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel .master-class-tree,
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel .master-class-tree2 {
+  float: none !important;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 !important;
+}
+
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel .master-class-tree table,
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel .master-class-tree2 table,
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel .class-tree > table {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#MAIN.skill-calc-tabs-host .skill-calc-tab-panel {
+  overflow-x: auto;
+}

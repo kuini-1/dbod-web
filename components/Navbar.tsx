@@ -165,6 +165,12 @@ export function Navbar({ hasLevelupNotification = false }: NavbarProps) {
                             <Link href="/cashshop" className={`hover:text-red-400 transition-colors ${pathname === '/cashshop' ? 'text-red-400' : 'text-stone-300'}`}>
                                 {t('navItemCashshop')}
                             </Link>
+                            <Link
+                                href="/skill-calculator"
+                                className={`hover:text-red-400 transition-colors ${pathname === '/skill-calculator' ? 'text-red-400' : 'text-stone-300'}`}
+                            >
+                                {t('navItemSkillCalculator')}
+                            </Link>
                             <Link href="/event-schedule" className={`hover:text-red-400 transition-colors ${pathname === '/event-schedule' ? 'text-red-400' : 'text-stone-300'} flex items-center gap-2`}>
                                 <span>{t('navItemEventSchedule')}</span>
                                 {isLoggedIn && hasLevelupNotification ? (
